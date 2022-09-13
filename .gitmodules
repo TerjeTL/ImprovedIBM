@@ -2,3 +2,6 @@
 	path = external/SDL
 	url = https://github.com/libsdl-org/SDL.git
 	branch = release-2.24.x
+[submodule "external/blaze"]
+	path = external/blaze
+	url = https://bitbucket.org/blaze-lib/blaze/src/master/

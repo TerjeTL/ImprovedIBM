@@ -41,6 +41,9 @@ endif()
 if(NOT EXISTS "${CMAKE_SOURCE_DIR}/external/SDL/CMakeLists.txt")
 	message(FATAL_ERROR "The SDL submodule(s) was not downloaded! GIT_SUBMODULE was turned off or failed.")
 endif()
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/external/blaze/CMakeLists.txt")
+	message(FATAL_ERROR "The Blaze submodule(s) was not downloaded! GIT_SUBMODULE was turned off or failed.")
+endif()
 
 
 project("ibm_application")

@@ -7,15 +7,29 @@ cmake_minimum_required (VERSION 3.8)
 add_executable (ibm_application "src/ibm_application/ibm_application.cpp" "include/ibm_application/ibm_application.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ibm_application PROPERTY CXX_STANDARD 20)
+  set_property(TARGET ibm_application PROPERTY CXX_STANDARD 17)
 endif()
+
 
 target_include_directories(ibm_application
 	PUBLIC "${PROJECT_SOURCE_DIR}/ibm_application/include/"
 )
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/blaze/cmake")
+include(Blaze_Import)
+Blaze_Import(
+	QUIET
+	BLAS off
+	LAPACK off
+	THREADING off
+	CACHE_SIZE auto
+	VECTORIZATION off
+	STORAGE_ORDER rowMajor
+)
+
 set(SDL_LIBRARIES ${SDL_LIBRARIES} SDL2main SDL2-static)
 target_link_libraries(ibm_application
 	PRIVATE ${SDL_LIBRARIES}
+	PRIVATE Blaze
 )
 # TODO: Add tests and install targets if needed.

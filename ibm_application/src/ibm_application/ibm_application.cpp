@@ -6,6 +6,8 @@
 
 #include "ibm_application/ibm_application.h"
 
+#include "blaze/Math.h"
+
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
 
@@ -24,10 +26,10 @@ int main()
 
     // Place the grid cursor in the middle of the screen.
     SDL_Rect grid_cursor = {
-        .x = (grid_width - 1) / 2 * grid_cell_size,
-        .y = (grid_height - 1) / 2 * grid_cell_size,
-        .w = grid_cell_size,
-        .h = grid_cell_size,
+        (grid_width - 1) / 2 * grid_cell_size,
+        (grid_height - 1) / 2 * grid_cell_size,
+        grid_cell_size,
+        grid_cell_size
     };
 
     // The cursor ghost is a cursor that always shows in the cell below the
