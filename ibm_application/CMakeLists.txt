@@ -4,7 +4,7 @@
 cmake_minimum_required (VERSION 3.8)
 
 # Add source to this project's executable.
-add_executable (ibm_application "src/ibm_application/ibm_application.cpp" "include/ibm_application/ibm_application.h")
+add_executable (ibm_application "src/ibm_application/ibm_application.cpp" "include/ibm_application/ibm_application.h" "src/ibm_application/SDLGraphics.cpp" "include/ibm_application/SDLGraphics.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET ibm_application PROPERTY CXX_STANDARD 17)
