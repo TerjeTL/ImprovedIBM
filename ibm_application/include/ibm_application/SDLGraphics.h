@@ -4,6 +4,28 @@
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
 
+#include <iostream>
+
+struct GridPos
+{
+	int x, y;
+};
+
+struct GridPosF
+{
+	float x, y;
+};
+
+struct ScreenSpacePos
+{
+	int x, y;
+};
+
+struct ScreenSpacePosF
+{
+	float x, y;
+};
+
 class SDLGraphics
 {
 public:
@@ -13,29 +35,41 @@ public:
 
 	void RunSDLGraphics();
 
+	ScreenSpacePos GetScreenSpacePos(GridPos grid_location);
+
 private:
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 
-	int grid_cell_size = 25;
-	int grid_width = 29;
-	int grid_height = 23;
+	void DrawCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius);
+
+	int grid_cell_size = 21;
+	int zoom_gain = 0;
+	int zoom_level = 0;
+	int grid_width = 31;
+	int grid_height = 31;
 
 	// + 1 so that the last grid lines fit in the screen.
 	int window_width = (grid_width * grid_cell_size) + 1;
 	int window_height = (grid_height * grid_cell_size) + 1;
 
 	// Place the grid cursor in the middle of the screen.
-	SDL_Rect grid_cursor = {
-		(grid_width - 1) / 2 * grid_cell_size,
-		(grid_height - 1) / 2 * grid_cell_size,
-		grid_cell_size,
-		grid_cell_size
+	SDL_FRect grid_cursor = {
+		((float)grid_width - 1.f) / 2.f * (float)grid_cell_size,
+		((float)grid_height - 1.f) / 2.f * (float)grid_cell_size,
+		(float)grid_cell_size,
+		(float)grid_cell_size
+	};
+	
+	
+	GridPos grid_position = {
+		(grid_width - 1) / 2,
+		(grid_height - 1) / 2
 	};
 
 	// The cursor ghost is a cursor that always shows in the cell below the
 	// mouse cursor.
-	SDL_Rect grid_cursor_ghost = { grid_cursor.x, grid_cursor.y, grid_cell_size,
+	SDL_Rect grid_cursor_ghost = { 0, 0, grid_cell_size,
 								  grid_cell_size };
 
 	// Dark theme.
