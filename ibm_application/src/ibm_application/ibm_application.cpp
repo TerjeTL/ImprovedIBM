@@ -7,8 +7,7 @@
 
 #include "ibm_application/ibm_application.h"
 #include "ibm_application/SDLGraphics.h"
-
-#include "blaze/Math.h"
+#include "ibm_application/CartGrid.h"
 
 int main()
 {
@@ -21,6 +20,7 @@ int main()
         std::cout << "--- Immersed Boundary Method Program ---\n"
             << "Run options:\n"
             << "1. Grid Visualization (SDL)\n"
+            << "2. Generate CartGrid\n"
             << std::endl;
 
         std::string input;
@@ -43,6 +43,11 @@ int main()
             // Launch our SDLGraphics program
             sdl_program.SDLGraphicsInitialize();
             sdl_program.RunSDLGraphics();
+            break;
+        }
+        case 2:
+        {
+            CartGrid testgrid(30UL);
             break;
         }
         default:
