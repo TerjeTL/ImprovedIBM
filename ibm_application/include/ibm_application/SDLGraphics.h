@@ -38,6 +38,7 @@ public:
 
 	ScreenSpacePos GetScreenSpacePos(GridPos grid_location);
 	ScreenSpacePosF GetScreenSpacePosF(GridPosF grid_location);
+	GridPosF GetGridPosF(double x_pos_norm, double y_pos_norm);
 	int GetGridCellSize() { return grid_cell_size; };
 
 private:
@@ -49,17 +50,17 @@ private:
 	void RenderCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color = { 255, 255, 255, 255 });
 	void RenderFillCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color = { 255, 255, 255, 255 });
 
-	int grid_cell_size = 24;
+	int grid_cell_size = 25;
 	int zoom_gain = 0;
 	int zoom_level = 0;
-	int grid_width = 21;
-	int grid_height = 21;
+	int grid_width = 31;
+	int grid_height = 31;
 
-	// + 1 so that the last grid lines fit in the screen.
-	int window_width = (grid_width * grid_cell_size) + 1;
-	int window_height = (grid_height * grid_cell_size) + 1;
+	// Set window size based on grid extents
+	int window_width = (grid_width * grid_cell_size) + 2;
+	int window_height = (grid_height * grid_cell_size) + 2;
 
-	// Place the grid cursor in the middle of the screen.
+	// Place grid cursor in the centre of the window
 	SDL_FRect grid_cursor = {
 		((float)grid_width - 1.f) / 2.f * (float)grid_cell_size,
 		((float)grid_height - 1.f) / 2.f * (float)grid_cell_size,
@@ -67,7 +68,7 @@ private:
 		(float)grid_cell_size
 	};
 	
-	
+	// Select starting grid position at/near the centre
 	GridPos grid_position = {
 		(grid_width - 1) / 2,
 		(grid_height - 1) / 2

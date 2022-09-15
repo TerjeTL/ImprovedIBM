@@ -29,16 +29,50 @@ void SDLGraphics::SDLGraphicsInitialize()
 
 ScreenSpacePos SDLGraphics::GetScreenSpacePos(GridPos grid_location)
 {
-    int x_screenspace = (grid_location.x - grid_position.x  + grid_width / 2)*grid_cell_size + grid_cell_size/2 - zoom_level * grid_width / 2;
-    int y_screenspace = (grid_location.y - grid_position.y  + grid_width / 2)*grid_cell_size + grid_cell_size/2 - zoom_level * grid_height / 2;
+    int even_grid_offset_x = 0;
+    int even_grid_offset_y = 0;
+    if (grid_width % 2 == 0)
+    {
+        even_grid_offset_x = grid_cell_size / 2;
+    }
+    if (grid_height % 2 == 0)
+    {
+        even_grid_offset_y = grid_cell_size / 2;
+    }
+    int x_screenspace = (grid_location.x - grid_position.x  + grid_width / 2)*grid_cell_size + grid_cell_size/2 - zoom_level * grid_width / 2 - even_grid_offset_x;
+    int y_screenspace = (grid_location.y - grid_position.y  + grid_height / 2)*grid_cell_size + grid_cell_size/2 - zoom_level * grid_height / 2 - even_grid_offset_y;
     return { x_screenspace, y_screenspace };
 }
 
 ScreenSpacePosF SDLGraphics::GetScreenSpacePosF(GridPosF grid_location)
 {
-    double x_screenspace = (grid_location.x - static_cast<double>(grid_position.x) + static_cast<double>(grid_width) / 2.0) * static_cast<double>(grid_cell_size) + static_cast<double>(grid_cell_size) / 2.0 - static_cast<double>(zoom_level) * static_cast<double>(grid_width) / 2.0;
-    double y_screenspace = (grid_location.y - static_cast<double>(grid_position.y) + static_cast<double>(grid_width) / 2.0) * static_cast<double>(grid_cell_size) + static_cast<double>(grid_cell_size) / 2.0 - static_cast<double>(zoom_level) * static_cast<double>(grid_height) / 2.0;
+    double even_grid_offset_x = 0.0;
+    double even_grid_offset_y = 0.0;
+    if (grid_width % 2 == 0)
+    {
+        even_grid_offset_x = 0.5 * static_cast<double>(grid_cell_size);
+    }
+    if (grid_height % 2 == 0)
+    {
+        even_grid_offset_y = 0.5 * static_cast<double>(grid_cell_size);
+    }
+    double x_screenspace = (grid_location.x - static_cast<double>(grid_position.x) + static_cast<double>(grid_width) / 2.0) * static_cast<double>(grid_cell_size)
+        + static_cast<double>(grid_cell_size) / 2.0
+        - static_cast<double>(zoom_level) * static_cast<double>(grid_width) / 2.0
+        - even_grid_offset_x;
+    double y_screenspace = (grid_location.y - static_cast<double>(grid_position.y) + static_cast<double>(grid_height) / 2.0) * static_cast<double>(grid_cell_size)
+        + static_cast<double>(grid_cell_size) / 2.0
+        - static_cast<double>(zoom_level) * static_cast<double>(grid_height) / 2.0
+        - even_grid_offset_y;
     return { x_screenspace, y_screenspace };
+}
+
+GridPosF SDLGraphics::GetGridPosF(double x_pos_norm, double y_pos_norm)
+{
+    double x_gridspace = static_cast<double>(grid_width * grid_cell_size) * x_pos_norm;
+    double y_gridspace = static_cast<double>(grid_height * grid_cell_size) * y_pos_norm;
+
+    return { x_gridspace, y_gridspace };
 }
 
 void SDLGraphics::RenderCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color)
@@ -216,11 +250,16 @@ void SDLGraphics::RunSDLGraphics()
             }
         }
 
+        float center_cursor_size = (float)grid_cell_size / 4.f;
+        ScreenSpacePosF center_cursor_pos{ (double)window_width * 0.5, (double)window_height * 0.5 };
+        center_cursor_pos.x -= 0.5*center_cursor_size;
+        center_cursor_pos.y -= 0.5*center_cursor_size;
+
         grid_cursor = {
-        ((float)grid_width) / 2.f * (float)grid_cell_size - 0.125f * (float)grid_cell_size - (float)zoom_level * (float)grid_width / 2.f,
-        ((float)grid_height) / 2.f * (float)grid_cell_size - 0.125f * (float)grid_cell_size - (float)zoom_level * (float)grid_height / 2.f,
-        (float)grid_cell_size/4.f,
-        (float)grid_cell_size/4.f
+        (float)center_cursor_pos.x,
+        (float)center_cursor_pos.y,
+        center_cursor_size,
+        center_cursor_size
         };
 
         // Draw grid background.
@@ -235,26 +274,29 @@ void SDLGraphics::RunSDLGraphics()
         ScreenSpacePos west_north_lim = GetScreenSpacePos(GridPos{ 0, 0 });
         ScreenSpacePos east_south_lim = GetScreenSpacePos(GridPos{ grid_width, grid_height });
 
-        float west_lim = static_cast<float>(west_north_lim.x);
-        float east_lim = static_cast<float>(east_south_lim.x);
+        int west_lim = west_north_lim.x;
+        int east_lim = east_south_lim.x;
 
-        float north_lim = static_cast<float>(west_north_lim.y);
-        float south_lim = static_cast<float>(east_south_lim.y);
+        int north_lim = west_north_lim.y;
+        int south_lim = east_south_lim.y;
 
-        for (int x = 0; x < grid_width; x += 1) {
-            float x_screenspace = GetScreenSpacePosF(GridPosF{ static_cast<float>(x), 0.f }).x;
-            SDL_RenderDrawLineF(renderer, x_screenspace, south_lim - static_cast<float>(grid_cell_size), x_screenspace, north_lim);
+        for (int x = 0; x < grid_width; x += 1)
+        {
+            ScreenSpacePos screenspace_pos = GetScreenSpacePos(GridPos{ x, 0 });
+            SDL_RenderDrawLine(renderer, screenspace_pos.x, south_lim - grid_cell_size, screenspace_pos.x, north_lim);
+            for (int y = 0; y < grid_height; y += 1)
+            {
+                screenspace_pos = GetScreenSpacePos(GridPos{ x, y });
+                SDL_RenderDrawLine(renderer, west_lim, screenspace_pos.y, east_lim - grid_cell_size, screenspace_pos.y);
+            }
         }
 
-        for (int y = 0; y < grid_height; y += 1) {
-            int y_screenspace = GetScreenSpacePos(GridPos{ 0, y }).y;
-            SDL_RenderDrawLine(renderer, west_lim, y_screenspace, east_lim - grid_cell_size, y_screenspace);
-        }
-
-        for (int x = 0; x < grid_width; x += 1) {
-            for (int y = 0; y < grid_height; y += 1) {
-                ScreenSpacePos circle_screenspace_pos = GetScreenSpacePos(GridPos{ x, y });
-
+        for (int x = 0; x < grid_width; x += 1) 
+        {
+            for (int y = 0; y < grid_height; y += 1)
+            {
+                ScreenSpacePos screenspace_pos = GetScreenSpacePos(GridPos{ x, y });
+                
                 if (immersed_boundary.SignedDistanceFunction(x, y) < 0)
                 {
                     if (immersed_boundary.SignedDistanceFunction(x + 1, y) >= 0
@@ -262,16 +304,16 @@ void SDLGraphics::RunSDLGraphics()
                         || immersed_boundary.SignedDistanceFunction(x, y+1) >= 0
                         || immersed_boundary.SignedDistanceFunction(x, y-1) >= 0)
                     {
-                        RenderFillCircle(renderer, circle_screenspace_pos.x, circle_screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 0, 255, 0, 255 });
+                        RenderFillCircle(renderer, screenspace_pos.x, screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 0, 255, 0, 255 });
                     }
                     else
                     {
-                        RenderFillCircle(renderer, circle_screenspace_pos.x, circle_screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 255, 0, 0, 255 });
+                        RenderFillCircle(renderer, screenspace_pos.x, screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 255, 0, 0, 255 });
                     }
                 }
                 else
                 {
-                    RenderFillCircle(renderer, circle_screenspace_pos.x, circle_screenspace_pos.y, grid_cell_size / 20);
+                    RenderFillCircle(renderer, screenspace_pos.x, screenspace_pos.y, grid_cell_size / 20);
                 }
             }
         }
