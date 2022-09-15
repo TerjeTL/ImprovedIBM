@@ -34,6 +34,13 @@ ScreenSpacePos SDLGraphics::GetScreenSpacePos(GridPos grid_location)
     return { x_screenspace, y_screenspace };
 }
 
+ScreenSpacePosF SDLGraphics::GetScreenSpacePosF(GridPosF grid_location)
+{
+    double x_screenspace = (grid_location.x - static_cast<double>(grid_position.x) + static_cast<double>(grid_width) / 2.0) * static_cast<double>(grid_cell_size) + static_cast<double>(grid_cell_size) / 2.0 - static_cast<double>(zoom_level) * static_cast<double>(grid_width) / 2.0;
+    double y_screenspace = (grid_location.y - static_cast<double>(grid_position.y) + static_cast<double>(grid_width) / 2.0) * static_cast<double>(grid_cell_size) + static_cast<double>(grid_cell_size) / 2.0 - static_cast<double>(zoom_level) * static_cast<double>(grid_height) / 2.0;
+    return { x_screenspace, y_screenspace };
+}
+
 void SDLGraphics::RenderCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color)
 {
     SDL_Color original;
@@ -129,26 +136,26 @@ void SDLGraphics::RunSDLGraphics()
                 case SDLK_w:
                 case SDLK_UP:
                     grid_position.y -= 1;
-                    //std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
-                    std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
+                    std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
+                    //std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
                     break;
                 case SDLK_s:
                 case SDLK_DOWN:
                     grid_position.y += 1;
-                    std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
-                    //std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
+                    //std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
+                    std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
                     break;
                 case SDLK_a:
                 case SDLK_LEFT:
                     grid_position.x -= 1;
-                    std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
-                    //std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
+                    //std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
+                    std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
                     break;
                 case SDLK_d:
                 case SDLK_RIGHT:
                     grid_position.x += 1;
-                    std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
-                    //std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
+                    //std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
+                    std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
                     break;
                 case SDLK_z:
                     if (zoom_gain <= 0)
@@ -228,15 +235,15 @@ void SDLGraphics::RunSDLGraphics()
         ScreenSpacePos west_north_lim = GetScreenSpacePos(GridPos{ 0, 0 });
         ScreenSpacePos east_south_lim = GetScreenSpacePos(GridPos{ grid_width, grid_height });
 
-        int west_lim = west_north_lim.x;
-        int east_lim = east_south_lim.x;
+        float west_lim = static_cast<float>(west_north_lim.x);
+        float east_lim = static_cast<float>(east_south_lim.x);
 
-        int north_lim = west_north_lim.y;
-        int south_lim = east_south_lim.y;
+        float north_lim = static_cast<float>(west_north_lim.y);
+        float south_lim = static_cast<float>(east_south_lim.y);
 
         for (int x = 0; x < grid_width; x += 1) {
-            int x_screenspace = GetScreenSpacePos(GridPos{ x, 0 }).x;
-            SDL_RenderDrawLine(renderer, x_screenspace, south_lim - grid_cell_size, x_screenspace, north_lim);
+            float x_screenspace = GetScreenSpacePosF(GridPosF{ static_cast<float>(x), 0.f }).x;
+            SDL_RenderDrawLineF(renderer, x_screenspace, south_lim - static_cast<float>(grid_cell_size), x_screenspace, north_lim);
         }
 
         for (int y = 0; y < grid_height; y += 1) {

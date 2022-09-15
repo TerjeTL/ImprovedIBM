@@ -14,7 +14,7 @@ struct GridPos
 
 struct GridPosF
 {
-	float x, y;
+	double x, y;
 };
 
 struct ScreenSpacePos
@@ -24,7 +24,7 @@ struct ScreenSpacePos
 
 struct ScreenSpacePosF
 {
-	float x, y;
+	double x, y;
 };
 
 class SDLGraphics
@@ -37,6 +37,7 @@ public:
 	void RunSDLGraphics();
 
 	ScreenSpacePos GetScreenSpacePos(GridPos grid_location);
+	ScreenSpacePosF GetScreenSpacePosF(GridPosF grid_location);
 	int GetGridCellSize() { return grid_cell_size; };
 
 private:
@@ -48,11 +49,11 @@ private:
 	void RenderCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color = { 255, 255, 255, 255 });
 	void RenderFillCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color = { 255, 255, 255, 255 });
 
-	int grid_cell_size = 21;
+	int grid_cell_size = 24;
 	int zoom_gain = 0;
 	int zoom_level = 0;
-	int grid_width = 31;
-	int grid_height = 31;
+	int grid_width = 21;
+	int grid_height = 21;
 
 	// + 1 so that the last grid lines fit in the screen.
 	int window_width = (grid_width * grid_cell_size) + 1;
