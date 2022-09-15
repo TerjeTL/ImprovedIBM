@@ -45,9 +45,8 @@ if(NOT EXISTS "${CMAKE_SOURCE_DIR}/external/blaze/CMakeLists.txt")
 	message(FATAL_ERROR "The Blaze submodule(s) was not downloaded! GIT_SUBMODULE was turned off or failed.")
 endif()
 
-
 project("ibm_application")
 
 # Include sub-projects.
 add_subdirectory("ibm_application")
-add_subdirectory("external/SDL")
+add_subdirectory("${CMAKE_SOURCE_DIR}/external/SDL")

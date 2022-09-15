@@ -4,7 +4,7 @@
 cmake_minimum_required (VERSION 3.8)
 
 # Add source to this project's executable.
-add_executable (ibm_application "src/ibm_application/ibm_application.cpp" "include/ibm_application/ibm_application.h" "src/ibm_application/SDLGraphics.cpp" "include/ibm_application/SDLGraphics.h")
+add_executable (ibm_application "src/ibm_application/ibm_application.cpp" "include/ibm_application/ibm_application.h" "src/ibm_application/SDLGraphics.cpp" "include/ibm_application/SDLGraphics.h" "src/ibm_application/GeometrySDF.cpp" "include/ibm_application/GeometrySDF.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET ibm_application PROPERTY CXX_STANDARD 17)
@@ -13,6 +13,7 @@ endif()
 
 target_include_directories(ibm_application
 	PUBLIC "${PROJECT_SOURCE_DIR}/ibm_application/include/"
+	PUBLIC "${CMAKE_SOURCE_DIR}/external/SDL/include/"
 )
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/blaze/cmake")

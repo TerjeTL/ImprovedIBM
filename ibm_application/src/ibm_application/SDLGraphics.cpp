@@ -34,8 +34,12 @@ ScreenSpacePos SDLGraphics::GetScreenSpacePos(GridPos grid_location)
     return { x_screenspace, y_screenspace };
 }
 
-void SDLGraphics::DrawCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius)
+void SDLGraphics::RenderCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color)
 {
+    SDL_Color original;
+    SDL_GetRenderDrawColor(renderer, &original.r, &original.g, &original.b, &original.a);
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
     const int32_t diameter = (radius * 2);
 
     int32_t x = (radius - 1);
@@ -70,6 +74,48 @@ void SDLGraphics::DrawCircle(SDL_Renderer* renderer, int32_t centreX, int32_t ce
             error += (tx - diameter);
         }
     }
+
+    SDL_SetRenderDrawColor(renderer, original.r, original.g, original.b, original.a);
+}
+
+void SDLGraphics::RenderFillCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color)
+{
+    SDL_Color original;
+    SDL_GetRenderDrawColor(renderer, &original.r, &original.g, &original.b, &original.a);
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
+    const int32_t diameter = (radius * 2);
+
+    int32_t x = (radius - 1);
+    int32_t y = 0;
+    int32_t tx = 1;
+    int32_t ty = 1;
+    int32_t error = (tx - diameter);
+
+    while (x >= y)
+    {
+        //  Each of the following renders an octant of the circle
+        SDL_RenderDrawLine(renderer, centreX + x, centreY + y, centreX - x, centreY + y);
+        SDL_RenderDrawLine(renderer, centreX + y, centreY + x, centreX - y, centreY + x);
+        SDL_RenderDrawLine(renderer, centreX + x, centreY - y, centreX - x, centreY - y);
+        SDL_RenderDrawLine(renderer, centreX + y, centreY - x, centreX - y, centreY - x);
+
+        if (error <= 0)
+        {
+            ++y;
+            error += ty;
+            ty += 2;
+        }
+
+        if (error > 0)
+        {
+            --x;
+            tx += 2;
+            error += (tx - diameter);
+        }
+    }
+
+    SDL_SetRenderDrawColor(renderer, original.r, original.g, original.b, original.a);
 }
 
 void SDLGraphics::RunSDLGraphics()
@@ -83,22 +129,26 @@ void SDLGraphics::RunSDLGraphics()
                 case SDLK_w:
                 case SDLK_UP:
                     grid_position.y -= 1;
-                    std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
+                    //std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
+                    std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
                     break;
                 case SDLK_s:
                 case SDLK_DOWN:
                     grid_position.y += 1;
-                    std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
+                    std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
+                    //std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
                     break;
                 case SDLK_a:
                 case SDLK_LEFT:
                     grid_position.x -= 1;
-                    std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
+                    std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
+                    //std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
                     break;
                 case SDLK_d:
                 case SDLK_RIGHT:
                     grid_position.x += 1;
-                    std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
+                    std::cout << immersed_boundary.SignedDistanceFunction((double)grid_position.x, (double)grid_position.y) << "\n";
+                    //std::cout << "P = (" << grid_position.x << ", " << grid_position.y << ")\n";
                     break;
                 case SDLK_z:
                     if (zoom_gain <= 0)
@@ -175,19 +225,48 @@ void SDLGraphics::RunSDLGraphics()
         SDL_SetRenderDrawColor(renderer, grid_line_color.r, grid_line_color.g,
             grid_line_color.b, grid_line_color.a);
 
-        int west_lim = (grid_width / 2 * grid_cell_size - grid_position.x * grid_cell_size + grid_cell_size / 2 - zoom_level * grid_width/2);
-        int east_lim = grid_width * grid_cell_size + west_lim;
+        ScreenSpacePos west_north_lim = GetScreenSpacePos(GridPos{ 0, 0 });
+        ScreenSpacePos east_south_lim = GetScreenSpacePos(GridPos{ grid_width, grid_height });
 
-        int north_lim = (grid_height / 2 * grid_cell_size - grid_position.y*grid_cell_size + grid_cell_size / 2 - zoom_level * grid_height/2);
-        int south_lim = grid_height * grid_cell_size + north_lim;
-        //std::cout << left_lim << "\n";
+        int west_lim = west_north_lim.x;
+        int east_lim = east_south_lim.x;
 
-        for (int x = west_lim; x < east_lim; x += grid_cell_size) {
-            SDL_RenderDrawLine(renderer, x, south_lim-grid_cell_size, x, north_lim);
+        int north_lim = west_north_lim.y;
+        int south_lim = east_south_lim.y;
+
+        for (int x = 0; x < grid_width; x += 1) {
+            int x_screenspace = GetScreenSpacePos(GridPos{ x, 0 }).x;
+            SDL_RenderDrawLine(renderer, x_screenspace, south_lim - grid_cell_size, x_screenspace, north_lim);
         }
 
-        for (int y = north_lim; y < south_lim; y += grid_cell_size) {
-            SDL_RenderDrawLine(renderer, west_lim, y, east_lim-grid_cell_size, y);
+        for (int y = 0; y < grid_height; y += 1) {
+            int y_screenspace = GetScreenSpacePos(GridPos{ 0, y }).y;
+            SDL_RenderDrawLine(renderer, west_lim, y_screenspace, east_lim - grid_cell_size, y_screenspace);
+        }
+
+        for (int x = 0; x < grid_width; x += 1) {
+            for (int y = 0; y < grid_height; y += 1) {
+                ScreenSpacePos circle_screenspace_pos = GetScreenSpacePos(GridPos{ x, y });
+
+                if (immersed_boundary.SignedDistanceFunction(x, y) < 0)
+                {
+                    if (immersed_boundary.SignedDistanceFunction(x + 1, y) >= 0
+                        || immersed_boundary.SignedDistanceFunction(x + -1, y) >= 0
+                        || immersed_boundary.SignedDistanceFunction(x, y+1) >= 0
+                        || immersed_boundary.SignedDistanceFunction(x, y-1) >= 0)
+                    {
+                        RenderFillCircle(renderer, circle_screenspace_pos.x, circle_screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 0, 255, 0, 255 });
+                    }
+                    else
+                    {
+                        RenderFillCircle(renderer, circle_screenspace_pos.x, circle_screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 255, 0, 0, 255 });
+                    }
+                }
+                else
+                {
+                    RenderFillCircle(renderer, circle_screenspace_pos.x, circle_screenspace_pos.y, grid_cell_size / 20);
+                }
+            }
         }
 
         // Draw grid ghost cursor.
@@ -206,11 +285,13 @@ void SDLGraphics::RunSDLGraphics()
         SDL_RenderFillRectF(renderer, &grid_cursor);
 
 
-        ScreenSpacePos inner_circle_center = GetScreenSpacePos(GridPos{ 10, 10 });
-        DrawCircle(renderer, inner_circle_center.x, inner_circle_center.y, grid_cell_size*4);
+        //ScreenSpacePos inner_circle_center = GetScreenSpacePos(GridPos{ 10, 10 });
+        //RenderFillCircle(renderer, inner_circle_center.x, inner_circle_center.y, grid_cell_size*4);
 
-        ScreenSpacePos outer_circle_center = GetScreenSpacePos(GridPos{ grid_width/2, grid_height/2 });
-        DrawCircle(renderer, outer_circle_center.x, outer_circle_center.y, grid_cell_size * grid_height/2);
+        immersed_boundary.RenderSDF(renderer, *this);
+
+        //ScreenSpacePos outer_circle_center = GetScreenSpacePos(GridPos{ grid_width/2, grid_height/2 });
+        //RenderCircle(renderer, outer_circle_center.x, outer_circle_center.y, grid_cell_size * grid_height/6);
 
         SDL_RenderPresent(renderer);
     }

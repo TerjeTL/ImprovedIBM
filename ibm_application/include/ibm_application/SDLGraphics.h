@@ -3,6 +3,7 @@
 
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
+#include "ibm_application/GeometrySDF.h"
 
 #include <iostream>
 
@@ -36,12 +37,16 @@ public:
 	void RunSDLGraphics();
 
 	ScreenSpacePos GetScreenSpacePos(GridPos grid_location);
+	int GetGridCellSize() { return grid_cell_size; };
 
 private:
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 
-	void DrawCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius);
+	Circle2D_SDF immersed_boundary{ 15., 15., 6. };
+
+	void RenderCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color = { 255, 255, 255, 255 });
+	void RenderFillCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color = { 255, 255, 255, 255 });
 
 	int grid_cell_size = 21;
 	int zoom_gain = 0;

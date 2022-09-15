@@ -33,6 +33,7 @@
 
 # Application specifics
 *.vs
+CMakeSettings.json
 
 # Folders
 build/
