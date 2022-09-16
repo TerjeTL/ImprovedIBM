@@ -10,7 +10,7 @@ GeometrySDF::GeometrySDF(double pos_x, double pos_y) : m_pos_x(pos_x), m_pos_y(p
 
 }
 
-double Circle2D_SDF::SignedDistanceFunction(double sample_x, double sample_y)
+double Circle2D_SDF::SignedDistanceFunction(double sample_x, double sample_y) const
 {
 	double p_x = sample_x - m_pos_x;
 	double p_y = sample_y - m_pos_y;
@@ -18,16 +18,27 @@ double Circle2D_SDF::SignedDistanceFunction(double sample_x, double sample_y)
 	return std::sqrt(p_x*p_x + p_y*p_y) - m_radius;
 }
 
+blaze::StaticVector<double, 2L> Circle2D_SDF::GetNormal(double sample_x, double sample_y)
+{
+    double dx = sample_x - m_pos_x;
+    double dy = sample_y - m_pos_y;
+
+    blaze::StaticVector<double, 2L> normal{dx, dy};
+
+    return blaze::normalize(normal);
+}
+
 void Circle2D_SDF::RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics)
 {
     SDL_Color color = {255,255,255,255};
-    ScreenSpacePos position = graphics.GetScreenSpacePos(GridPos{ (int)m_pos_x, (int)m_pos_y });
+    GridPosF test = graphics.GetGridPosF(m_pos_x, m_pos_y);
+    ScreenSpacePosF position = graphics.GetScreenSpacePosF(test);
 
     SDL_Color original;
     SDL_GetRenderDrawColor(renderer, &original.r, &original.g, &original.b, &original.a);
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
-    int render_radius = (int)m_radius * graphics.GetGridCellSize();
+    int render_radius = (int)(m_radius * (float)(graphics.GetGridExtent().first-1) * (float)graphics.GetGridCellSize());
 
     const int32_t diameter = (render_radius * 2);
 

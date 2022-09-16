@@ -4,6 +4,7 @@
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
 #include "ibm_application/GeometrySDF.h"
+#include "ibm_application/CartGrid.h"
 
 #include <iostream>
 
@@ -30,7 +31,7 @@ struct ScreenSpacePosF
 class SDLGraphics
 {
 public:
-	SDLGraphics();
+	SDLGraphics(std::shared_ptr<CartGrid> mesh_grid);
 	void SDLGraphicsInitialize();
 	~SDLGraphics() = default;
 
@@ -40,10 +41,13 @@ public:
 	ScreenSpacePosF GetScreenSpacePosF(GridPosF grid_location);
 	GridPosF GetGridPosF(double x_pos_norm, double y_pos_norm);
 	int GetGridCellSize() { return grid_cell_size; };
+	std::pair<int, int> GetGridExtent() { return std::pair<int,int>{grid_width, grid_height}; };
 
 private:
 	SDL_Window* window;
 	SDL_Renderer* renderer;
+
+	std::shared_ptr<CartGrid> m_mesh_grid;
 
 	Circle2D_SDF immersed_boundary{ 15., 15., 6. };
 
@@ -57,27 +61,18 @@ private:
 	int grid_height = 31;
 
 	// Set window size based on grid extents
-	int window_width = (grid_width * grid_cell_size) + 2;
-	int window_height = (grid_height * grid_cell_size) + 2;
+	int window_width;
+	int window_height;
 
 	// Place grid cursor in the centre of the window
-	SDL_FRect grid_cursor = {
-		((float)grid_width - 1.f) / 2.f * (float)grid_cell_size,
-		((float)grid_height - 1.f) / 2.f * (float)grid_cell_size,
-		(float)grid_cell_size,
-		(float)grid_cell_size
-	};
+	SDL_FRect grid_cursor;
 	
 	// Select starting grid position at/near the centre
-	GridPos grid_position = {
-		(grid_width - 1) / 2,
-		(grid_height - 1) / 2
-	};
+	GridPos grid_position;
 
 	// The cursor ghost is a cursor that always shows in the cell below the
 	// mouse cursor.
-	SDL_Rect grid_cursor_ghost = { 0, 0, grid_cell_size,
-								  grid_cell_size };
+	SDL_Rect grid_cursor_ghost;
 
 	// Dark theme.
 	SDL_Color grid_background = { 22, 22, 22, 255 }; // Barely Black

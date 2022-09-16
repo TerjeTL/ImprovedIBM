@@ -5,8 +5,28 @@
 
 
 
-SDLGraphics::SDLGraphics()
+SDLGraphics::SDLGraphics(std::shared_ptr<CartGrid> mesh_grid) : m_mesh_grid(mesh_grid)
 {
+    auto grid_extent = m_mesh_grid->GetMeshSize();
+    grid_width = grid_extent.first;
+    grid_height = grid_extent.second;
+
+    window_width = (grid_width * grid_cell_size) + 2;
+    window_height = (grid_height * grid_cell_size) + 2;
+
+    grid_cursor = {
+        ((float)grid_width - 1.f) / 2.f * (float)grid_cell_size,
+        ((float)grid_height - 1.f) / 2.f * (float)grid_cell_size,
+        (float)grid_cell_size,
+        (float)grid_cell_size
+    };
+
+    grid_position = {
+        (grid_width - 1) / 2,
+        (grid_height - 1) / 2
+    };
+
+    grid_cursor_ghost = { 0, 0, grid_cell_size, grid_cell_size };
 }
 
 void SDLGraphics::SDLGraphicsInitialize()
@@ -69,8 +89,8 @@ ScreenSpacePosF SDLGraphics::GetScreenSpacePosF(GridPosF grid_location)
 
 GridPosF SDLGraphics::GetGridPosF(double x_pos_norm, double y_pos_norm)
 {
-    double x_gridspace = static_cast<double>(grid_width * grid_cell_size) * x_pos_norm;
-    double y_gridspace = static_cast<double>(grid_height * grid_cell_size) * y_pos_norm;
+    double x_gridspace = (static_cast<double>(grid_width)-2) * x_pos_norm;
+    double y_gridspace = (static_cast<double>(grid_height)-2) * y_pos_norm;
 
     return { x_gridspace, y_gridspace };
 }
@@ -291,29 +311,36 @@ void SDLGraphics::RunSDLGraphics()
             }
         }
 
-        for (int x = 0; x < grid_width; x += 1) 
+        // Draw our grid flags
+        if (m_mesh_grid)
         {
-            for (int y = 0; y < grid_height; y += 1)
+            for (int i = 0; i < grid_width; i += 1)
             {
-                ScreenSpacePos screenspace_pos = GetScreenSpacePos(GridPos{ x, y });
-                
-                if (immersed_boundary.SignedDistanceFunction(x, y) < 0)
+                for (int j = 0; j < grid_height; j += 1)
                 {
-                    if (immersed_boundary.SignedDistanceFunction(x + 1, y) >= 0
-                        || immersed_boundary.SignedDistanceFunction(x + -1, y) >= 0
-                        || immersed_boundary.SignedDistanceFunction(x, y+1) >= 0
-                        || immersed_boundary.SignedDistanceFunction(x, y-1) >= 0)
+                    ScreenSpacePos screenspace_pos = GetScreenSpacePos(GridPos{ i, j });
+
+                    switch (m_mesh_grid->GetCellFlag(i,j))
                     {
-                        RenderFillCircle(renderer, screenspace_pos.x, screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 0, 255, 0, 255 });
-                    }
-                    else
-                    {
+                    case 0:
+                        RenderFillCircle(renderer, screenspace_pos.x, screenspace_pos.y, grid_cell_size / 20);
+                        break;
+                    case 1:
                         RenderFillCircle(renderer, screenspace_pos.x, screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 255, 0, 0, 255 });
+                        break;
+                    case 2:
+                        RenderFillCircle(renderer, screenspace_pos.x, screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 0, 255, 0, 255 });
+                        for (auto const& [hash, sdf] : m_mesh_grid->GetImmersedBoundaries())
+                        {
+                            auto norm = sdf->GetNormal((float)i / (float)(grid_width), (float)j / (float)(grid_height));
+                            GridPosF t = { norm[0]*(float)(grid_width), norm[1]*(float)(grid_height) };
+                            ScreenSpacePosF n = { t.x*(float)(grid_cell_size), t.y*(float)(grid_cell_size) };
+                            SDL_RenderDrawLineF(renderer, screenspace_pos.x, screenspace_pos.y, screenspace_pos.x + n.x, screenspace_pos.x + n.y);
+                        } 
+                        break;
+                    default:
+                        break;
                     }
-                }
-                else
-                {
-                    RenderFillCircle(renderer, screenspace_pos.x, screenspace_pos.y, grid_cell_size / 20);
                 }
             }
         }
@@ -337,10 +364,10 @@ void SDLGraphics::RunSDLGraphics()
         //ScreenSpacePos inner_circle_center = GetScreenSpacePos(GridPos{ 10, 10 });
         //RenderFillCircle(renderer, inner_circle_center.x, inner_circle_center.y, grid_cell_size*4);
 
-        immersed_boundary.RenderSDF(renderer, *this);
-
-        //ScreenSpacePos outer_circle_center = GetScreenSpacePos(GridPos{ grid_width/2, grid_height/2 });
-        //RenderCircle(renderer, outer_circle_center.x, outer_circle_center.y, grid_cell_size * grid_height/6);
+        for (auto const& [hash, sdf] : m_mesh_grid->GetImmersedBoundaries())
+        {
+            sdf->RenderSDF(renderer, *this);
+        }
 
         SDL_RenderPresent(renderer);
     }

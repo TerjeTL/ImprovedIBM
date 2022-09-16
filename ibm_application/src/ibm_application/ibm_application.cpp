@@ -11,8 +11,11 @@
 
 int main()
 {
+    // Debugging grid
+    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(31);
+
     // Prepare an SDLGraphics instance
-    SDLGraphics sdl_program;
+    SDLGraphics sdl_program(grid_debug);
    
     bool exit_menu = false;
     while (!exit_menu)
@@ -47,7 +50,8 @@ int main()
         }
         case 2:
         {
-            CartGrid testgrid(30UL);
+            grid_debug->AddImmersedBoundary("Inner Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.25 }));
+            grid_debug->UpdateGrid();
             break;
         }
         default:
