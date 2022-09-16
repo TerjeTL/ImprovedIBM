@@ -330,13 +330,6 @@ void SDLGraphics::RunSDLGraphics()
                         break;
                     case 2:
                         RenderFillCircle(renderer, screenspace_pos.x, screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 0, 255, 0, 255 });
-                        for (auto const& [hash, sdf] : m_mesh_grid->GetImmersedBoundaries())
-                        {
-                            auto norm = sdf->GetNormal((float)i / (float)(grid_width), (float)j / (float)(grid_height));
-                            GridPosF t = { norm[0]*(float)(grid_width), norm[1]*(float)(grid_height) };
-                            ScreenSpacePosF n = { t.x*(float)(grid_cell_size), t.y*(float)(grid_cell_size) };
-                            SDL_RenderDrawLineF(renderer, screenspace_pos.x, screenspace_pos.y, screenspace_pos.x + n.x, screenspace_pos.x + n.y);
-                        } 
                         break;
                     default:
                         break;
