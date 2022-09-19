@@ -51,14 +51,9 @@ ScreenSpacePos SDLGraphics::GetScreenSpacePos(GridPos grid_location)
 {
     int even_grid_offset_x = 0;
     int even_grid_offset_y = 0;
-    if (grid_width % 2 == 0)
-    {
-        even_grid_offset_x = grid_cell_size / 2;
-    }
-    if (grid_height % 2 == 0)
-    {
-        even_grid_offset_y = grid_cell_size / 2;
-    }
+    even_grid_offset_x = grid_cell_size / 2;
+    even_grid_offset_y = grid_cell_size / 2;
+    
     int x_screenspace = (grid_location.x - grid_position.x  + grid_width / 2)*grid_cell_size + grid_cell_size/2 - zoom_level * grid_width / 2 - even_grid_offset_x;
     int y_screenspace = (grid_location.y - grid_position.y  + grid_height / 2)*grid_cell_size + grid_cell_size/2 - zoom_level * grid_height / 2 - even_grid_offset_y;
     return { x_screenspace, y_screenspace };
@@ -68,14 +63,9 @@ ScreenSpacePosF SDLGraphics::GetScreenSpacePosF(GridPosF grid_location)
 {
     double even_grid_offset_x = 0.0;
     double even_grid_offset_y = 0.0;
-    if (grid_width % 2 == 0)
-    {
-        even_grid_offset_x = 0.5 * static_cast<double>(grid_cell_size);
-    }
-    if (grid_height % 2 == 0)
-    {
-        even_grid_offset_y = 0.5 * static_cast<double>(grid_cell_size);
-    }
+    even_grid_offset_x = 0.5 * static_cast<double>(grid_cell_size);
+    even_grid_offset_y = 0.5 * static_cast<double>(grid_cell_size);
+    
     double x_screenspace = (grid_location.x - static_cast<double>(grid_position.x) + static_cast<double>(grid_width) / 2.0) * static_cast<double>(grid_cell_size)
         + static_cast<double>(grid_cell_size) / 2.0
         - static_cast<double>(zoom_level) * static_cast<double>(grid_width) / 2.0
@@ -89,8 +79,8 @@ ScreenSpacePosF SDLGraphics::GetScreenSpacePosF(GridPosF grid_location)
 
 GridPosF SDLGraphics::GetGridPosF(double x_pos_norm, double y_pos_norm)
 {
-    double x_gridspace = (static_cast<double>(grid_width)-2) * x_pos_norm;
-    double y_gridspace = (static_cast<double>(grid_height)-2) * y_pos_norm;
+    double x_gridspace = (static_cast<double>(grid_width)-1) * x_pos_norm;
+    double y_gridspace = (static_cast<double>(grid_height)-1) * y_pos_norm;
 
     return { x_gridspace, y_gridspace };
 }
@@ -329,14 +319,29 @@ void SDLGraphics::RunSDLGraphics()
                         RenderFillCircle(renderer, screenspace_pos.x, screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 255, 0, 0, 255 });
                         break;
                     case 2:
+                    {
                         RenderFillCircle(renderer, screenspace_pos.x, screenspace_pos.y, grid_cell_size / 20, SDL_Color{ 0, 255, 0, 255 });
+  
+                        auto image_point = m_mesh_grid->GetImagePoint(i, j);
+                        ScreenSpacePosF image_point_screenspace = GetScreenSpacePosF(GetGridPosF(image_point[0], image_point[1]));
+                        RenderCircle(renderer, (float)image_point_screenspace.x, (float)image_point_screenspace.y, grid_cell_size / 20, SDL_Color{ 0, 0, 255, 255 });
                         break;
+                    }
                     default:
                         break;
                     }
                 }
             }
         }
+
+        GridPosF debug_point_grid_from = GetGridPosF(0.0, 0.0);
+        ScreenSpacePosF debug_point_scr_from = GetScreenSpacePosF(debug_point_grid_from);
+
+        GridPosF debug_point_grid_to = GetGridPosF(0.5, 0.5);
+        ScreenSpacePosF debug_point_scr_to = GetScreenSpacePosF(debug_point_grid_to);
+        
+        SDL_RenderDrawLineF(renderer, debug_point_scr_from.x, debug_point_scr_from.y, debug_point_scr_to.x, debug_point_scr_to.y);
+        RenderFillCircle(renderer, debug_point_scr_to.x, debug_point_scr_to.y, grid_cell_size / 20);
 
         // Draw grid ghost cursor.
         if (mouse_active && mouse_hover) {

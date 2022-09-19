@@ -54,7 +54,7 @@ private:
 	void RenderCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color = { 255, 255, 255, 255 });
 	void RenderFillCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color = { 255, 255, 255, 255 });
 
-	int grid_cell_size = 25;
+	int grid_cell_size = 45;
 	int zoom_gain = 0;
 	int zoom_level = 0;
 	int grid_width = 31;

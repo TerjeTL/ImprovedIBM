@@ -12,7 +12,7 @@
 int main()
 {
     // Debugging grid
-    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(31);
+    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(22);
 
     // Prepare an SDLGraphics instance
     SDLGraphics sdl_program(grid_debug);

@@ -1,7 +1,7 @@
 
 #include "ibm_application/CartGrid.h"
 
-CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(nn, nn, 0), phi_matrix(nn, nn, phi_0)
+CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(nn, nn, 0), image_points(nn,nn), phi_matrix(nn, nn, phi_0)
 {
     h = length_scales.at(1) / static_cast<double>(nn-1);
 }
@@ -26,6 +26,13 @@ void CartGrid::UpdateGrid()
                             || sdf->SignedDistanceFunction(x, y + h) >= 0.0
                             || sdf->SignedDistanceFunction(x, y - h) >= 0.0) {
                             grid_flags(i, j) = 2;
+
+                            // Calculate normal and assign respective image-point (they are not cleared!)
+                            auto normal = sdf->GetNormal(x, y);
+                            blaze::StaticVector<double, 2L> node{ x, y };
+
+                            auto image_point = node + normal * std::abs(sdf->SignedDistanceFunction(x, y)) * 2.0;
+                            image_points(i, j) = image_point;
                         }
                         else {
                             grid_flags(i, j) = 1;
@@ -40,4 +47,5 @@ void CartGrid::UpdateGrid()
     }
 
     std::cout << grid_flags;
+    std::cout << image_points;
 }

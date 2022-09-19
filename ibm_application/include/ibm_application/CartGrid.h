@@ -26,6 +26,11 @@ public:
 	{
 		return grid_flags(i, j);
 	}
+	blaze::StaticVector<double, 2L> GetImagePoint(size_t i, size_t j) const
+	{
+		return image_points(i, j);
+	}
+
 
 	std::pair<int, int> GetMeshSize() const
 	{
@@ -52,6 +57,7 @@ private:
 	// active:		1
 	// ghost point:	2
 	blaze::DynamicMatrix<int> grid_flags;
+	blaze::CompressedMatrix<blaze::StaticVector<double, 2L>> image_points;
 
 	
 	blaze::DynamicMatrix<double> phi_matrix;
