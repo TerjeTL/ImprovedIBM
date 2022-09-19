@@ -18,14 +18,15 @@ double Circle2D_SDF::SignedDistanceFunction(double sample_x, double sample_y) co
 	return std::sqrt(p_x*p_x + p_y*p_y) - m_radius;
 }
 
-blaze::StaticVector<double, 2L> Circle2D_SDF::GetNormal(double sample_x, double sample_y)
+Eigen::Vector2d Circle2D_SDF::GetNormal(double sample_x, double sample_y)
 {
     double dx = sample_x - m_pos_x;
     double dy = sample_y - m_pos_y;
 
-    blaze::StaticVector<double, 2L> normal{dx, dy};
+    Eigen::Vector2d normal{dx, dy};
+    normal.normalize();
 
-    return blaze::normalize(normal);
+    return normal;
 }
 
 void Circle2D_SDF::RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics)

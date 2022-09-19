@@ -2,7 +2,9 @@
 
 #include <memory>
 #include <functional>
-#include <blaze/Blaze.h>
+
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
 
 #include "ibm_application/GeometrySDF.h"
 
@@ -26,15 +28,15 @@ public:
 	{
 		return grid_flags(i, j);
 	}
-	blaze::StaticVector<double, 2L> GetImagePoint(size_t i, size_t j) const
+	Eigen::Vector2d GetImagePoint(size_t i, size_t j) const
 	{
-		return image_points(i, j);
+		return image_points.at({ i, j });
 	}
 
 
 	std::pair<int, int> GetMeshSize() const
 	{
-		return std::pair<int, int>{grid_flags.columns(), grid_flags.rows()};
+		return std::pair<int, int>{grid_flags.cols(), grid_flags.rows()};
 	}
 
 	std::unordered_map<std::size_t, std::shared_ptr<GeometrySDF>> GetImmersedBoundaries() const
@@ -48,7 +50,7 @@ private:
 
 	double h = 0.0;
 
-	blaze::StaticVector<double, 3L> length_scales{ 1.0, 1.0, 1.0 };
+	Eigen::Vector3d length_scales{ 1.0, 1.0, 1.0 };
 
 	// Grid flags
 	//##############################################################
@@ -56,9 +58,9 @@ private:
 	// inactive:	0
 	// active:		1
 	// ghost point:	2
-	blaze::DynamicMatrix<int> grid_flags;
-	blaze::CompressedMatrix<blaze::StaticVector<double, 2L>> image_points;
+	Eigen::MatrixXi grid_flags;
 
-	
-	blaze::DynamicMatrix<double> phi_matrix;
+	std::map<std::pair<int, int>, Eigen::Vector2d> image_points;
+
+	Eigen::MatrixXd phi_matrix;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <blaze/Math.h>
+#include <Eigen/Dense>
 
 //#include "ibm_application/SDLGraphics.h"
 #include "SDL.h"
@@ -17,7 +17,7 @@ public:
 	void SetPosition(double pos_x, double pos_y) { m_pos_x = pos_x; m_pos_y = pos_y; };
 	virtual double SignedDistanceFunction(double sample_x, double sample_y) const { return 0.0; };
 	virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) {};
-	virtual blaze::StaticVector<double, 2L> GetNormal(double sample_x, double sample_y) { return blaze::StaticVector<double, 2L>{}; };
+	virtual Eigen::Vector2d GetNormal(double sample_x, double sample_y) { return Eigen::Vector2d{}; };
 
 protected:
 
@@ -35,7 +35,7 @@ public:
 	virtual double SignedDistanceFunction(double sample_x, double sample_y) const override;
 	virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) override;
 
-	blaze::StaticVector<double, 2L> GetNormal(double sample_x, double sample_y) override;
+	Eigen::Vector2d GetNormal(double sample_x, double sample_y) override;
 
 private:
 	double m_radius;

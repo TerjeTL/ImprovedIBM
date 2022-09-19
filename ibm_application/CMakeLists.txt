@@ -32,5 +32,6 @@ set(SDL_LIBRARIES ${SDL_LIBRARIES} SDL2main SDL2-static)
 target_link_libraries(ibm_application
 	PRIVATE ${SDL_LIBRARIES}
 	PRIVATE Blaze
+	PRIVATE Eigen3::Eigen
 )
 # TODO: Add tests and install targets if needed.

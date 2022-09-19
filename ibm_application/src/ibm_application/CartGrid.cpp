@@ -1,9 +1,9 @@
 
 #include "ibm_application/CartGrid.h"
 
-CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(nn, nn, 0), image_points(nn,nn), phi_matrix(nn, nn, phi_0)
+CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(nn, nn), phi_matrix(nn, nn)
 {
-    h = length_scales.at(1) / static_cast<double>(nn-1);
+    h = length_scales(0) / static_cast<double>(nn - 1);
 }
 
 void CartGrid::UpdateGrid()
@@ -14,7 +14,7 @@ void CartGrid::UpdateGrid()
         if (sdf)
         {
             for (size_t i = 0UL; i < grid_flags.rows(); ++i) {
-                for (size_t j = 0UL; j < grid_flags.columns(); ++j) {
+                for (size_t j = 0UL; j < grid_flags.cols(); ++j) {
 
                     auto x = static_cast<double>(i) * h;
                     auto y = static_cast<double>(j) * h;
@@ -29,10 +29,10 @@ void CartGrid::UpdateGrid()
 
                             // Calculate normal and assign respective image-point (they are not cleared!)
                             auto normal = sdf->GetNormal(x, y);
-                            blaze::StaticVector<double, 2L> node{ x, y };
+                            Eigen::Vector2d node{ x, y };
 
-                            auto image_point = node + normal * std::abs(sdf->SignedDistanceFunction(x, y)) * 2.0;
-                            image_points(i, j) = image_point;
+                            Eigen::Vector2d image_point = node + normal * std::abs(sdf->SignedDistanceFunction(x, y)) * 2.0;
+                            image_points[{ i, j }] = image_point;
                         }
                         else {
                             grid_flags(i, j) = 1;
@@ -45,7 +45,4 @@ void CartGrid::UpdateGrid()
             }
         }
     }
-
-    std::cout << grid_flags;
-    std::cout << image_points;
 }

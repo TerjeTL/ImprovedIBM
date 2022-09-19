@@ -6,9 +6,14 @@ cmake_minimum_required (VERSION 3.14)
 #	FETCHCONTENT METHOD
 include(FetchContent)
 FetchContent_Declare(
-  catch
-  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v2.13.6
+	catch
+	GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+	GIT_TAG        v2.13.6
+)
+FetchContent_Declare(
+	Eigen
+	GIT_REPOSITORY    https://gitlab.com/libeigen/eigen.git
+	GIT_TAG           master
 )
 #FetchContent_Declare(
 #  sdl2
@@ -18,6 +23,8 @@ FetchContent_Declare(
 
 # CMake 3.14+
 FetchContent_MakeAvailable(catch)
+FetchContent_MakeAvailable(Eigen)
+# use target Eigen3::Eigen
 #FetchContent_MakeAvailable(sdl2)
 
 #	DOWNLOAD ALL THE SUBMODULES (git submodules)
