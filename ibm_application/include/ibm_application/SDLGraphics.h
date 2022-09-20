@@ -3,6 +3,7 @@
 
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
+#include ""
 #include "ibm_application/GeometrySDF.h"
 #include "ibm_application/CartGrid.h"
 
@@ -46,10 +47,9 @@ public:
 private:
 	SDL_Window* window;
 	SDL_Renderer* renderer;
+	
 
 	std::shared_ptr<CartGrid> m_mesh_grid;
-
-	Circle2D_SDF immersed_boundary{ 15., 15., 6. };
 
 	void RenderCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color = { 255, 255, 255, 255 });
 	void RenderFillCircle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius, SDL_Color color = { 255, 255, 255, 255 });

@@ -14,6 +14,7 @@ endif()
 target_include_directories(ibm_application
 	PUBLIC "${PROJECT_SOURCE_DIR}/ibm_application/include/"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/SDL/include/"
+	PUBLIC "${CMAKE_SOURCE_DIR}/external/SDL_ttf/include/"
 )
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/blaze/cmake")
@@ -28,7 +29,7 @@ Blaze_Import(
 	STORAGE_ORDER rowMajor
 )
 
-set(SDL_LIBRARIES ${SDL_LIBRARIES} SDL2main SDL2-static)
+set(SDL_LIBRARIES ${SDL_LIBRARIES} SDL2main SDL2-static SDL2_ttf-static)
 target_link_libraries(ibm_application
 	PRIVATE ${SDL_LIBRARIES}
 	PRIVATE Blaze

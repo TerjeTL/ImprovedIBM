@@ -1,7 +1,8 @@
 
 #include "ibm_application/CartGrid.h"
 
-CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(Eigen::MatrixXi::Zero(nn, nn)), phi_matrix(Eigen::MatrixXd::Zero(nn, nn))
+CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(Eigen::MatrixXi::Zero(nn, nn)), phi_matrix(Eigen::MatrixXd::Zero(nn, nn)),
+phi_image_point_matrix(Eigen::MatrixXd::Zero(nn, nn)), boundary_phi(Eigen::MatrixXd::Zero(nn, nn))
 {
     h = length_scales(0) / static_cast<double>(nn - 1);
 }
@@ -34,7 +35,8 @@ void CartGrid::UpdateGrid()
                             Eigen::Vector2d image_point = node + normal * std::abs(sdf->SignedDistanceFunction(x, y)) * 2.0;
                             image_points[{ i, j }] = image_point;
 
-                            auto test = BilinearInterpolation(image_point);
+                            phi_image_point_matrix(i,j) = BilinearInterpolation(i, j);
+                            boundary_phi(i, j) = sdf->GetBoundaryPhi();
                         }
                         else {
                             grid_flags(i, j) = 1;
@@ -49,10 +51,10 @@ void CartGrid::UpdateGrid()
     }
 }
 
-double CartGrid::BilinearInterpolation(Eigen::Vector2d world_coordinate)
+double CartGrid::BilinearInterpolation(size_t i, size_t j)
 {
     // Interpolation in grid-space
-    Eigen::Vector2d grid_coordinate = GetGridCoordinate(world_coordinate);
+    Eigen::Vector2d grid_coordinate = GetGridCoordinate(image_points.at({i, j}));
 
     std::array<Eigen::Vector2i, 4> node_indices;
     std::array<Eigen::Vector2d, 4> node_locations;
@@ -92,6 +94,8 @@ double CartGrid::BilinearInterpolation(Eigen::Vector2d world_coordinate)
         + coefficients(1) * grid_coordinate(0)
         + coefficients(2) * grid_coordinate(1)
         + coefficients(3) * grid_coordinate(0) * grid_coordinate(1);
+
+    bilinear_interp_selection[{i, j}] = node_locations;
 
     return phi;
 }

@@ -50,7 +50,7 @@ int main()
         }
         case 2:
         {
-            grid_debug->AddImmersedBoundary("Inner Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.25 }));
+            grid_debug->AddImmersedBoundary("Inner Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 100.0, 0.25}));
             grid_debug->UpdateGrid();
             break;
         }

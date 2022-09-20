@@ -5,7 +5,7 @@
 #include "ibm_application/SDLGraphics.h"
 #include <cmath>
 
-GeometrySDF::GeometrySDF(double pos_x, double pos_y) : m_pos_x(pos_x), m_pos_y(pos_y)
+GeometrySDF::GeometrySDF(double pos_x, double pos_y, double boundary_phi) : m_pos_x(pos_x), m_pos_y(pos_y), m_boundary_phi(boundary_phi)
 {
 
 }
