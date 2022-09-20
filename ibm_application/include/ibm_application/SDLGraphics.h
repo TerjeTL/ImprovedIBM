@@ -1,9 +1,10 @@
 
 #pragma once
 
+
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
-#include ""
+#include <SDL_ttf.h>
 #include "ibm_application/GeometrySDF.h"
 #include "ibm_application/CartGrid.h"
 
@@ -37,6 +38,8 @@ public:
 	~SDLGraphics() = default;
 
 	void RunSDLGraphics();
+	void RenderGridText();
+	void RenderText(std::string text, GridPosF position, SDL_Color color, float width, float height);
 
 	ScreenSpacePos GetScreenSpacePos(GridPos grid_location);
 	ScreenSpacePosF GetScreenSpacePosF(GridPosF grid_location);
@@ -47,6 +50,7 @@ public:
 private:
 	SDL_Window* window;
 	SDL_Renderer* renderer;
+	TTF_Font* font;
 	
 
 	std::shared_ptr<CartGrid> m_mesh_grid;
@@ -83,4 +87,9 @@ private:
 	SDL_bool quit = SDL_FALSE;
 	SDL_bool mouse_active = SDL_FALSE;
 	SDL_bool mouse_hover = SDL_FALSE;
+
+	bool m_draw_node_values = false;
+
+	SDL_Surface* m_message_surface = nullptr;
+	SDL_Texture* m_message = nullptr;
 };

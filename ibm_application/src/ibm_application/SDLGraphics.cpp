@@ -2,6 +2,7 @@
 #pragma once
 
 #include "ibm_application/SDLGraphics.h"
+#include <iomanip>
 
 
 
@@ -37,12 +38,14 @@ void SDLGraphics::SDLGraphicsInitialize()
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Initialize SDL: %s",
             SDL_GetError());
     }
-
+    TTF_Init();
+    
     if (SDL_CreateWindowAndRenderer(window_width, window_height, SDL_WINDOW_SHOWN | SDL_RENDERER_PRESENTVSYNC, &window, &renderer) < 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
             "Create window and renderer: %s", SDL_GetError());
     }
+    font = TTF_OpenFont("D:/Development/C++/ibm_application/fonts/Roboto/Roboto-Regular.ttf", 64);
 
     SDL_SetWindowTitle(window, "SDL IBM");
 }
@@ -169,6 +172,66 @@ void SDLGraphics::RenderFillCircle(SDL_Renderer* renderer, int32_t centreX, int3
     SDL_SetRenderDrawColor(renderer, original.r, original.g, original.b, original.a);
 }
 
+void SDLGraphics::RenderText(std::string text, GridPosF position, SDL_Color color, float width, float height)
+{
+    m_message_surface = TTF_RenderText_Solid(font, text.c_str(), color);
+
+    // Convert to texture
+    m_message = SDL_CreateTextureFromSurface(renderer, m_message_surface);
+
+    ScreenSpacePosF number_pos = GetScreenSpacePosF(position);
+
+    SDL_FRect message_rect;
+    message_rect.x = number_pos.x;
+    message_rect.y = number_pos.y;
+    message_rect.w = width;
+    message_rect.h = height;
+
+    SDL_RenderCopyF(renderer, m_message, NULL, &message_rect);
+
+    SDL_FreeSurface(m_message_surface);
+    SDL_DestroyTexture(m_message);
+}
+
+void SDLGraphics::RenderGridText()
+{
+    if (grid_cell_size / 2 < 30 || !m_draw_node_values)
+    {
+        return;
+    }
+
+    for (int i = 0; i < grid_width; i += 1)
+    {
+        for (int j = 0; j < grid_height; j += 1)
+        {
+            SDL_Color text_color = { 255, 255, 255 };
+
+            // Get phi value as string
+            std::ostringstream value_ostream;
+            value_ostream << std::showpoint << std::setprecision(4) << m_mesh_grid->GetPhi(i,j);
+            std::string value_str = value_ostream.str();
+
+            RenderText(value_str, GridPosF{ (double)i, (double)j - 0.2 }, text_color, 40.0, 15.0);
+
+            if (m_mesh_grid->GetCellFlag(i, j) == 2)
+            {
+                value_ostream.str("");
+                value_ostream.clear();
+
+                value_ostream << std::showpoint << std::setprecision(4) << m_mesh_grid->GetImagePointPhi(i,j);
+                value_str = value_ostream.str();
+
+                Eigen::Vector2d image_point_pos = m_mesh_grid->GetGridCoordinate(m_mesh_grid->GetImagePoint(i, j));
+
+                GridPosF image_point_text_pos = { image_point_pos(0), image_point_pos(1) - 0.15 };
+
+                RenderText(value_str, image_point_text_pos, text_color, 40.0, 15.0);
+            }
+
+        }
+    }
+}
+
 void SDLGraphics::RunSDLGraphics()
 {
     while (!quit) {
@@ -234,6 +297,9 @@ void SDLGraphics::RunSDLGraphics()
                     }
                     
                     std::cout << "zoom " << zoom_level << "\n";
+                    break;
+                case SDLK_v:
+                    m_draw_node_values = !m_draw_node_values;
                     break;
                 }
                 break;
@@ -367,10 +433,14 @@ void SDLGraphics::RunSDLGraphics()
             sdf->RenderSDF(renderer, *this);
         }
 
+        RenderGridText();
+
         SDL_RenderPresent(renderer);
     }
 
+    TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_Quit();
     SDL_Quit();
 }
