@@ -4,7 +4,15 @@
 cmake_minimum_required (VERSION 3.8)
 
 # Add source to this project's executable.
-add_executable (ibm_application "src/ibm_application/ibm_application.cpp" "include/ibm_application/ibm_application.h" "src/ibm_application/SDLGraphics.cpp" "include/ibm_application/SDLGraphics.h" "src/ibm_application/GeometrySDF.cpp" "include/ibm_application/GeometrySDF.h" "include/ibm_application/CartGrid.h" "src/ibm_application/CartGrid.cpp" "include/ibm_application/Schemes.h" "src/ibm_application/Schemes.cpp")
+add_executable(ibm_application "src/ibm_application/ibm_application.cpp")
+
+target_sources(ibm_application PRIVATE
+	"src/ibm_application/SDLGraphics.cpp"
+	"src/ibm_application/GeometrySDF.cpp"
+	"src/ibm_application/CartGrid.cpp"
+	"src/ibm_application/Schemes.cpp"
+	"src/ibm_application/Solver.cpp"
+)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET ibm_application PROPERTY CXX_STANDARD 17)

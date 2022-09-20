@@ -42,6 +42,10 @@ public:
 	{
 		return phi_image_point_matrix(i, j);
 	}
+	double GetBoundaryPhi(size_t i, size_t j) const
+	{
+		return boundary_phi(i, j);
+	}
 
 	std::pair<int, int> GetMeshSize() const
 	{
@@ -58,6 +62,11 @@ public:
 		return world_coordinate / h;
 	}
 
+	Eigen::Vector3d GetGridCellSize()
+	{
+		return length_scales * h;
+	}
+
 	double BilinearInterpolation(size_t i, size_t j);
 
 	const Eigen::MatrixXd& GetPhiMatrix() const
@@ -68,6 +77,11 @@ public:
 	Eigen::MatrixXd& GetPhiMatrixRef()
 	{
 		return phi_matrix;
+	}
+
+	Eigen::MatrixXd& GetPhiImagePointMatrixRef()
+	{
+		return phi_image_point_matrix;
 	}
 	
 	// Debugging-oriented functions

@@ -1,17 +1,43 @@
 
 #include "ibm_application/Schemes.h"
 
-void FTCS_Scheme::MakeIteration(double dt, double cfl)
+void FTCS_Scheme::BoundaryCondition()
 {
+	auto grid_extents = m_mesh_grid->GetMeshSize();
+	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
+
+	for (size_t i = 0; i < grid_extents.first; i++)
+	{
+		for (size_t j = 0; j < grid_extents.second; j++)
+		{
+			// skip if node is not a ghost point
+			if (m_mesh_grid->GetCellFlag(i, j) != 2)
+			{
+				continue;
+			}
+
+			// GP = 2*BI - IP
+			auto& ip_ref = m_mesh_grid->GetPhiImagePointMatrixRef();
+			ip_ref(i, j) = m_mesh_grid->BilinearInterpolation(i, j);
+
+			phi(i, j) = 2 * m_mesh_grid->GetBoundaryPhi(i,j) - ip_ref(i, j);
+		}
+	}
+}
+
+void FTCS_Scheme::Update(double dt, double cfl)
+{
+	BoundaryCondition();
+
 	auto grid_extents = m_mesh_grid->GetMeshSize();
 
 	phi_old = m_mesh_grid->GetPhiMatrix();
 	
 	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
 
-	for (size_t i = 0; i < grid_extents.first; i++)
+	for (size_t i = 1; i < grid_extents.first-1; i++)
 	{
-		for (size_t j = 0; j < grid_extents.second; j++)
+		for (size_t j = 1; j < grid_extents.second-1; j++)
 		{
 			// skip is node is a ghost point/inactive
 			if (m_mesh_grid->GetCellFlag(i,j) != 0)

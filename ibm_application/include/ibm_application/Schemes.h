@@ -10,7 +10,10 @@ public:
 	};
 	~FTCS_Scheme() {};
 
-	void MakeIteration(double dt, double cfl);
+	void Update(double dt, double cfl);
+
+	// hardcode boundary step
+	void BoundaryCondition();
 
 private:
 	std::shared_ptr<CartGrid> m_mesh_grid;

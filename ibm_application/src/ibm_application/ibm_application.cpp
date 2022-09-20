@@ -8,11 +8,13 @@
 #include "ibm_application/ibm_application.h"
 #include "ibm_application/SDLGraphics.h"
 #include "ibm_application/CartGrid.h"
+#include "ibm_application/Solver.h"
 
 int main()
 {
     // Debugging grid
     std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(22);
+    Solver test_solver{ 0.0001, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug };
 
     // Prepare an SDLGraphics instance
     SDLGraphics sdl_program(grid_debug);
@@ -23,7 +25,7 @@ int main()
         std::cout << "--- Immersed Boundary Method Program ---\n"
             << "Run options:\n"
             << "1. Grid Visualization (SDL)\n"
-            << "2. Generate CartGrid\n"
+            << "2. Run one step\n"
             << std::endl;
 
         std::string input;
@@ -52,6 +54,8 @@ int main()
         {
             grid_debug->AddImmersedBoundary("Inner Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 100.0, 0.25}));
             grid_debug->UpdateGrid();
+
+            test_solver.PerformStep(100);
             break;
         }
         default:
