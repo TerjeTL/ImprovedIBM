@@ -59,6 +59,16 @@ public:
 	}
 
 	double BilinearInterpolation(size_t i, size_t j);
+
+	const Eigen::MatrixXd& GetPhiMatrix() const
+	{
+		return phi_matrix;
+	}
+
+	Eigen::MatrixXd& GetPhiMatrixRef()
+	{
+		return phi_matrix;
+	}
 	
 	// Debugging-oriented functions
 	std::array<Eigen::Vector2d, 4> GetBilinearInterpSelection(size_t i, size_t j)
