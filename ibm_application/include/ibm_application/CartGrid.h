@@ -43,6 +43,13 @@ public:
 	{
 		return immersed_boundaries;
 	}
+
+	Eigen::Vector2d GetGridCoordinate(Eigen::Vector2d world_coordinate)
+	{
+		return world_coordinate / h;
+	}
+
+	double BilinearInterpolation(Eigen::Vector2d world_coordinate);
 	
 
 private:

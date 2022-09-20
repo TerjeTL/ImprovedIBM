@@ -1,7 +1,7 @@
 
 #include "ibm_application/CartGrid.h"
 
-CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(nn, nn), phi_matrix(nn, nn)
+CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(Eigen::MatrixXi::Zero(nn, nn)), phi_matrix(Eigen::MatrixXd::Zero(nn, nn))
 {
     h = length_scales(0) / static_cast<double>(nn - 1);
 }
@@ -33,6 +33,8 @@ void CartGrid::UpdateGrid()
 
                             Eigen::Vector2d image_point = node + normal * std::abs(sdf->SignedDistanceFunction(x, y)) * 2.0;
                             image_points[{ i, j }] = image_point;
+
+                            auto test = BilinearInterpolation(image_point);
                         }
                         else {
                             grid_flags(i, j) = 1;
@@ -45,4 +47,51 @@ void CartGrid::UpdateGrid()
             }
         }
     }
+}
+
+double CartGrid::BilinearInterpolation(Eigen::Vector2d world_coordinate)
+{
+    // Interpolation in grid-space
+    Eigen::Vector2d grid_coordinate = GetGridCoordinate(world_coordinate);
+
+    std::array<Eigen::Vector2i, 4> node_indices;
+    std::array<Eigen::Vector2d, 4> node_locations;
+    Eigen::Vector4d node_phi;
+
+    node_indices[0] = grid_coordinate.cast<int>();
+    node_indices[1] = node_indices[0] + Eigen::Vector2i{ 0,1 };
+    node_indices[2] = node_indices[0] + Eigen::Vector2i{ 1,1 };
+    node_indices[3] = node_indices[0] + Eigen::Vector2i{ 1,0 };
+
+    for (size_t p = 0; p < node_indices.size(); p++)
+    {
+        if (grid_flags(node_indices[p](0), node_indices[p](1)) == 2)
+        {
+            auto image_pt_loc = GetGridCoordinate(GetImagePoint(node_indices[p](0), node_indices[p](1)));
+
+            node_locations[p] = node_indices[p].cast<double>() + (image_pt_loc - node_indices[p].cast<double>())/2.0;
+            node_phi(p) = 0.0;
+        }
+        else
+        {
+            node_locations[p] = node_indices[p].cast<double>();
+            node_phi(p) = phi_matrix(node_indices[p](0), node_indices[p](1));
+        }
+    }
+
+    Eigen::Matrix4d vandermonde{
+        {1, node_locations[0](0), node_locations[0](1), node_locations[0](0) * node_locations[0](1)},
+        {1, node_locations[1](0), node_locations[1](1), node_locations[1](0) * node_locations[1](1)},
+        {1, node_locations[2](0), node_locations[2](1), node_locations[2](0) * node_locations[2](1)},
+        {1, node_locations[3](0), node_locations[3](1), node_locations[3](0) * node_locations[3](1)}
+    };
+
+    Eigen::Vector4d coefficients = vandermonde.inverse() * node_phi;
+
+    double phi = coefficients(0)
+        + coefficients(1) * grid_coordinate(0)
+        + coefficients(2) * grid_coordinate(1)
+        + coefficients(3) * grid_coordinate(0) * grid_coordinate(1);
+
+    return phi;
 }
