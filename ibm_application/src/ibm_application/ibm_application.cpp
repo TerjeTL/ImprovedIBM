@@ -52,10 +52,11 @@ int main()
         }
         case 2:
         {
-            grid_debug->AddImmersedBoundary("Inner Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 100.0, 0.25}));
+            grid_debug->AddImmersedBoundary("Inner Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 100.0 }));
+            grid_debug->AddImmersedBoundary("Outer Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.44, 200.0, true }));
             grid_debug->UpdateGrid();
 
-            test_solver.PerformStep(100);
+            test_solver.PerformStep(1000);
             break;
         }
         default:

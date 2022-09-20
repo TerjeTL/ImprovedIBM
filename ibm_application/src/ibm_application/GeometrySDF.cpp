@@ -5,7 +5,8 @@
 #include "ibm_application/SDLGraphics.h"
 #include <cmath>
 
-GeometrySDF::GeometrySDF(double pos_x, double pos_y, double boundary_phi) : m_pos_x(pos_x), m_pos_y(pos_y), m_boundary_phi(boundary_phi)
+GeometrySDF::GeometrySDF(double pos_x, double pos_y, double boundary_phi, bool inverse_sign)
+    : m_pos_x(pos_x), m_pos_y(pos_y), m_boundary_phi(boundary_phi), m_inverse_sign(inverse_sign)
 {
 
 }
@@ -15,7 +16,14 @@ double Circle2D_SDF::SignedDistanceFunction(double sample_x, double sample_y) co
 	double p_x = sample_x - m_pos_x;
 	double p_y = sample_y - m_pos_y;
 
-	return std::sqrt(p_x*p_x + p_y*p_y) - m_radius;
+    if (m_inverse_sign)
+    {
+        return -(std::sqrt(p_x * p_x + p_y * p_y) - m_radius);
+    }
+    else
+    {
+        return std::sqrt(p_x * p_x + p_y * p_y) - m_radius;
+    }
 }
 
 Eigen::Vector2d Circle2D_SDF::GetNormal(double sample_x, double sample_y)
@@ -26,7 +34,14 @@ Eigen::Vector2d Circle2D_SDF::GetNormal(double sample_x, double sample_y)
     Eigen::Vector2d normal{dx, dy};
     normal.normalize();
 
-    return normal;
+    if (m_inverse_sign)
+    {
+        return -normal;
+    }
+    else
+    {
+        return normal;
+    }
 }
 
 void Circle2D_SDF::RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics)

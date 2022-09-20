@@ -11,7 +11,7 @@ class GeometrySDF
 {
 public:
 	GeometrySDF();
-	GeometrySDF(double pos_x, double pos_y, double boundary_phi);
+	GeometrySDF(double pos_x, double pos_y, double boundary_phi, bool inverse_sign = false);
 	~GeometrySDF() = default;
 
 	void SetPosition(double pos_x, double pos_y) { m_pos_x = pos_x; m_pos_y = pos_y; };
@@ -21,6 +21,7 @@ public:
 	virtual double GetBoundaryPhi() { return m_boundary_phi; };
 
 protected:
+	bool m_inverse_sign;
 	double m_boundary_phi = 0.0;
 
 	double m_pos_x = 0.0;
@@ -30,7 +31,8 @@ protected:
 class Circle2D_SDF : public GeometrySDF
 {
 public:
-	Circle2D_SDF(double pos_x, double pos_y, double boundary_phi, double radius) : GeometrySDF(pos_x, pos_y, boundary_phi), m_radius(radius) {};
+	Circle2D_SDF(double pos_x, double pos_y, double radius, double boundary_phi, bool inverse_sign = false)
+		: GeometrySDF(pos_x, pos_y, boundary_phi, inverse_sign), m_radius(radius) {};
 	~Circle2D_SDF() = default;
 
 
