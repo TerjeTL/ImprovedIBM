@@ -9,3 +9,6 @@ branch = release-2.20.x
 [submodule "external/blaze"]
 	path = external/blaze
 	url = https://bitbucket.org/blaze-lib/blaze/src/master/
+[submodule "external/HighFive"]
+	path = external/HighFive
+	url = https://github.com/BlueBrain/HighFive

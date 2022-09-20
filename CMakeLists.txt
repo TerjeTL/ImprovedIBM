@@ -18,6 +18,11 @@ FetchContent_Declare(
 	GIT_REPOSITORY    https://gitlab.com/libeigen/eigen.git
 	GIT_TAG           master
 )
+FetchContent_Declare(
+        hdf5
+        GIT_REPOSITORY https://github.com/HDFGroup/hdf5
+        GIT_TAG        develop
+)
 #FetchContent_Declare(
 #  sdl2
 #  GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
@@ -27,6 +32,7 @@ FetchContent_Declare(
 # CMake 3.14+
 FetchContent_MakeAvailable(catch)
 FetchContent_MakeAvailable(Eigen)
+FetchContent_MakeAvailable(hdf5)
 # use target Eigen3::Eigen
 #FetchContent_MakeAvailable(sdl2)
 
@@ -57,10 +63,18 @@ endif()
 if(NOT EXISTS "${CMAKE_SOURCE_DIR}/external/blaze/CMakeLists.txt")
 	message(FATAL_ERROR "The Blaze submodule(s) was not downloaded! GIT_SUBMODULE was turned off or failed.")
 endif()
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/external/HighFive/CMakeLists.txt")
+	message(FATAL_ERROR "The HighFive submodule(s) was not downloaded! GIT_SUBMODULE was turned off or failed.")
+endif()
 
 project("ibm_application")
+
+# HighFive configuration
+set(USE_BOOST OFF CACHE BOOL "Enable Boost Support")
+set(USE_EIGEN ON CACHE BOOL "Enable Eigen testing")
 
 # Include sub-projects.
 add_subdirectory("ibm_application")
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/SDL")
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/SDL_ttf")
+add_subdirectory("${CMAKE_SOURCE_DIR}/external/HighFive")
