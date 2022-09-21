@@ -3,18 +3,31 @@
 #pragma once
 
 #include <stdexcept>
+#include <filesystem>
 #include <iostream>
+#include <fstream>
 
 #include "ibm_application/ibm_application.h"
 #include "ibm_application/SDLGraphics.h"
 #include "ibm_application/CartGrid.h"
 #include "ibm_application/Solver.h"
+#include <Eigen/Core>
+
+const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", "\n");
+
+void writeToCSVfile(std::string name, Eigen::MatrixXd matrix)
+{
+    std::filesystem::path file_path = std::filesystem::current_path() / name;
+    std::ofstream file(file_path.string());
+    file << matrix.format(CSVFormat);
+    file.close();
+}
 
 int main()
 {
     // Debugging grid
-    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(22);
-    Solver test_solver{ 0.0001, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug };
+    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(42);
+    Solver test_solver{ 0.001, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug };
 
     // Prepare an SDLGraphics instance
     SDLGraphics sdl_program(grid_debug);
@@ -26,6 +39,7 @@ int main()
             << "Run options:\n"
             << "1. Grid Visualization (SDL)\n"
             << "2. Run one step\n"
+            << "3. Save Data\n"
             << std::endl;
 
         std::string input;
@@ -56,7 +70,17 @@ int main()
             grid_debug->AddImmersedBoundary("Outer Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.44, 200.0, true }));
             grid_debug->UpdateGrid();
 
-            test_solver.PerformStep(1000);
+            test_solver.PerformStep(5000);
+            break;
+        }
+        case 3:
+        {
+            std::string filename = "";
+            std::cout << "Save data to file:";
+            std::cin >> filename;
+            std::cout << std::endl;
+
+            writeToCSVfile(filename, grid_debug->GetPhiMatrix());
             break;
         }
         default:

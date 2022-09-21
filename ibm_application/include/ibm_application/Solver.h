@@ -25,7 +25,7 @@ private:
 	double m_alpha = 1.0;
 
 	double m_start_time = 0.0;
-	double m_end_time = 1.0;
+	double m_end_time = 10.0;
 	double m_time;
 	double m_dt;
 	double m_cfl = 0.0;
