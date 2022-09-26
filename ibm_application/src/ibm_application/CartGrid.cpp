@@ -42,9 +42,6 @@ void CartGrid::UpdateGrid()
                             grid_flags(i, j) = 1;
                         }
                     }
-                    else {
-                        grid_flags(i, j) = 0;
-                    }
                 }
             }
         }
@@ -72,7 +69,7 @@ double CartGrid::BilinearInterpolation(size_t i, size_t j)
             auto image_pt_loc = GetGridCoordinate(GetImagePoint(node_indices[p](0), node_indices[p](1)));
 
             node_locations[p] = node_indices[p].cast<double>() + (image_pt_loc - node_indices[p].cast<double>())/2.0;
-            node_phi(p) = 200.0;
+            node_phi(p) = boundary_phi(node_indices[p](0), node_indices[p](1));
         }
         else
         {

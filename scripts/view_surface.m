@@ -1,5 +1,5 @@
 clc; clear; close all;
 
-load("first_data.csv");
+load("data_export.csv");
 
-surf(min(first_data, 200.0));
+surf(data_export);
