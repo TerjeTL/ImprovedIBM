@@ -87,7 +87,8 @@ double CartGrid::BilinearInterpolation(size_t i, size_t j)
         {1, node_locations[3](0), node_locations[3](1), node_locations[3](0) * node_locations[3](1)}
     };
 
-    Eigen::Vector4d coefficients = vandermonde.ldlt().solve(node_phi);
+    //Eigen::Vector4d coefficients = vandermonde.inverse() * node_phi;
+    Eigen::Vector4d coefficients = vandermonde.colPivHouseholderQr().solve(node_phi);
     // solve as linear system x = A\b matlab
     // thomas algorithm/tdma
 

@@ -6,6 +6,8 @@ cmake_minimum_required (VERSION 3.14)
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
+set(CMAKE_CXX_FLAGS "-O2 /EHsc")
+
 #	FETCHCONTENT METHOD
 include(FetchContent)
 FetchContent_Declare(
@@ -25,7 +27,7 @@ FetchContent_Declare(
 #)
 
 # CMake 3.14+
-FetchContent_MakeAvailable(catch)
+#FetchContent_MakeAvailable(catch)
 FetchContent_MakeAvailable(Eigen)
 # use target Eigen3::Eigen
 #FetchContent_MakeAvailable(sdl2)
