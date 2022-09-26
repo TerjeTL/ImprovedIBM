@@ -45,7 +45,7 @@ void SDLGraphics::SDLGraphicsInitialize()
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
             "Create window and renderer: %s", SDL_GetError());
     }
-    font = TTF_OpenFont("C:/Development/C++/ImprovedIBM/fonts/Roboto/Roboto-Regular.ttf", 64);
+    font = TTF_OpenFont("C:/Users/terjetl/Documents/cpp/ImprovedIBM/fonts/Roboto/Roboto-Regular.ttf", 24);
 
     SDL_SetWindowTitle(window, "SDL IBM");
 }

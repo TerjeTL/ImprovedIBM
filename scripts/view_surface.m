@@ -1,5 +1,5 @@
 clc; clear; close all;
 
-load("first_data.csv");
+load("converged_result.csv");
 
-surf(first_data);
+surf(converged_result);

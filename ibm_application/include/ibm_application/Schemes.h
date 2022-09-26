@@ -15,8 +15,15 @@ public:
 	// hardcode boundary step
 	void BoundaryCondition();
 
+	double GetEuclidianNorm() const
+	{
+		return euclidian_norm;
+	}
+
 private:
 	std::shared_ptr<CartGrid> m_mesh_grid;
 	
 	Eigen::MatrixXd phi_old;
+
+	double euclidian_norm = 0.0;
 };

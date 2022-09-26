@@ -49,4 +49,6 @@ void FTCS_Scheme::Update(double dt, double cfl)
 					+ phi_old(i, j + 1) - 2 * phi_old(i, j) + phi_old(i, j - 1));
 		}
 	}
+
+	euclidian_norm = (phi - phi_old).squaredNorm();
 }

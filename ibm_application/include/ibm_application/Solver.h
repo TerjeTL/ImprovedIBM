@@ -4,6 +4,7 @@
 #include "CartGrid.h"
 
 #include <memory>
+#include <chrono>
 
 class Solver
 {
@@ -17,10 +18,14 @@ public:
 	~Solver() {};
 
 	void PerformStep(int steps = 1);
+	void CheckConvergence();
+	void TaskFinishedPrintout();
 
 private:
 	std::unique_ptr<FTCS_Scheme> m_selected_scheme;
 	std::shared_ptr<CartGrid> m_grid_mesh;
+
+	bool m_converged = false;
 
 	double m_alpha = 1.0;
 
@@ -29,4 +34,10 @@ private:
 	double m_time;
 	double m_dt;
 	double m_cfl = 0.0;
+	int m_iterations = 0;
+
+	double m_tolerance = 1.0e-10;
+	double m_euclidian_norm_first_it = 0.0;
+
+	std::chrono::duration<double> m_execution_time{ 0.0 };
 };

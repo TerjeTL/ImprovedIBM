@@ -1,6 +1,8 @@
 
 #include "ibm_application/CartGrid.h"
 
+#include <iostream>
+
 CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(Eigen::MatrixXi::Zero(nn, nn)), phi_matrix(Eigen::MatrixXd::Zero(nn, nn)),
 phi_image_point_matrix(Eigen::MatrixXd::Zero(nn, nn)), boundary_phi(Eigen::MatrixXd::Zero(nn, nn))
 {
@@ -41,9 +43,6 @@ void CartGrid::UpdateGrid()
                         else {
                             grid_flags(i, j) = 1;
                         }
-                    }
-                    else {
-                        grid_flags(i, j) = 0;
                     }
                 }
             }

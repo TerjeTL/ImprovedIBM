@@ -62,6 +62,11 @@ public:
 		return world_coordinate / h;
 	}
 
+	Eigen::Vector2d GetWorldCoordinate(Eigen::Vector2d grid_coordinate)
+	{
+		return grid_coordinate * h;
+	}
+
 	Eigen::Vector3d GetGridCellSize()
 	{
 		return length_scales * h;
