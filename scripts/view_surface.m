@@ -1,5 +1,5 @@
 clc; clear; close all;
 
-load("converged_result.csv");
+data = load("dirichlet_data.csv");
 
-surf(converged_result);
+surf(data);

@@ -4,7 +4,7 @@
 #include <iostream>
 
 CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(Eigen::MatrixXi::Zero(nn, nn)), phi_matrix(Eigen::MatrixXd::Zero(nn, nn)),
-phi_image_point_matrix(Eigen::MatrixXd::Zero(nn, nn)), boundary_phi(Eigen::MatrixXd::Zero(nn, nn))
+phi_image_point_matrix(Eigen::MatrixXd::Zero(nn, nn)), boundary_phi(Eigen::MatrixXd::Zero(nn, nn)), ghost_point_parent_sdf(Eigen::MatrixX<size_t>::Zero(nn, nn))
 {
     h = length_scales(0) / static_cast<double>(nn - 1);
 }
@@ -28,7 +28,10 @@ void CartGrid::UpdateGrid()
                             || sdf->SignedDistanceFunction(x - h, y) >= 0.0
                             || sdf->SignedDistanceFunction(x, y + h) >= 0.0
                             || sdf->SignedDistanceFunction(x, y - h) >= 0.0) {
+                            
+                            // Set location descriptors
                             grid_flags(i, j) = 2;
+                            ghost_point_parent_sdf(i, j) = hash;
 
                             // Calculate normal and assign respective image-point (they are not cleared!)
                             auto normal = sdf->GetNormal(x, y);
@@ -87,8 +90,9 @@ double CartGrid::BilinearInterpolation(size_t i, size_t j)
         {1, node_locations[3](0), node_locations[3](1), node_locations[3](0) * node_locations[3](1)}
     };
 
-    //Eigen::Vector4d coefficients = vandermonde.inverse() * node_phi;
-    Eigen::Vector4d coefficients = vandermonde.colPivHouseholderQr().solve(node_phi);
+    Eigen::Vector4d coefficients = vandermonde.inverse() * node_phi;
+
+    //Eigen::Vector4d coefficients = vandermonde.colPivHouseholderQr().solve(node_phi);
     // solve as linear system x = A\b matlab
     // thomas algorithm/tdma
 

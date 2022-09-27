@@ -26,8 +26,8 @@ void writeToCSVfile(std::string name, Eigen::MatrixXd matrix)
 int main()
 {
     // Debugging grid
-    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(822);
-    Solver test_solver{ 0.0001, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug };
+    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(22);
+    Solver test_solver{ 0.001, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug };
 
     // Prepare an SDLGraphics instance
     SDLGraphics sdl_program(grid_debug);
@@ -66,7 +66,10 @@ int main()
         }
         case 2:
         {
-            grid_debug->AddImmersedBoundary("Inner Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 100.0 }));
+            std::shared_ptr<Circle2D_SDF> inner_cylinder = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 100.0 });
+            inner_cylinder->SetBoundaryCondition(BoundaryCondition::Neumann);
+
+            grid_debug->AddImmersedBoundary("Inner Cylinder", inner_cylinder);
             grid_debug->AddImmersedBoundary("Outer Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.44, 200.0, true }));
             grid_debug->UpdateGrid();
 

@@ -16,11 +16,29 @@ void FTCS_Scheme::BoundaryCondition()
 				continue;
 			}
 
-			// GP = 2*BI - IP
 			auto& ip_ref = m_mesh_grid->GetPhiImagePointMatrixRef();
 			ip_ref(i, j) = m_mesh_grid->BilinearInterpolation(i, j);
 
-			phi(i, j) = 2 * m_mesh_grid->GetBoundaryPhi(i,j) - ip_ref(i, j);
+			
+			switch (m_mesh_grid->GetBoundaryCondition(i, j))
+			{
+			case BoundaryCondition::Dirichlet:
+			{
+				// GP = 2*BI - IP
+				phi(i, j) = 2 * m_mesh_grid->GetBoundaryPhi(i, j) - ip_ref(i, j);
+				break;
+			}
+			case BoundaryCondition::Neumann:
+			{
+				// GP = IP
+				phi(i, j) = ip_ref(i, j);
+				break;
+			}
+			default:
+				break;
+			}
+
+			
 		}
 	}
 }

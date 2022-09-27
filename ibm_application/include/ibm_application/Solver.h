@@ -36,7 +36,7 @@ private:
 	double m_cfl = 0.0;
 	int m_iterations = 0;
 
-	double m_tolerance = 1.0e-24;
+	double m_tolerance = 1.0e-8;
 	double m_euclidian_norm_first_it = 0.0;
 
 	std::chrono::duration<double> m_execution_time{ 0.0 };
