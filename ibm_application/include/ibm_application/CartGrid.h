@@ -79,6 +79,11 @@ public:
 		return phi_matrix;
 	}
 
+	BoundaryCondition GetBoundaryCondition(size_t i, size_t j) const
+	{
+		return immersed_boundaries.at(ghost_point_parent_sdf(i, j))->GetBoundaryCondition();
+	}
+
 	Eigen::MatrixXd& GetPhiMatrixRef()
 	{
 		return phi_matrix;
@@ -114,6 +119,7 @@ private:
 	Eigen::MatrixXd phi_matrix;
 	Eigen::MatrixXd phi_image_point_matrix;
 	Eigen::MatrixXd boundary_phi;
+	Eigen::MatrixX<size_t> ghost_point_parent_sdf;
 
 
 	// Debugging-oriented variables

@@ -7,6 +7,11 @@
 
 class SDLGraphics;
 
+enum class BoundaryCondition {
+	Dirichlet,
+	Neumann
+};
+
 class GeometrySDF
 {
 public:
@@ -15,12 +20,23 @@ public:
 	~GeometrySDF() = default;
 
 	void SetPosition(double pos_x, double pos_y) { m_pos_x = pos_x; m_pos_y = pos_y; };
+	void SetBoundaryCondition(BoundaryCondition boundary_condition)
+	{
+		m_boundary_condition = boundary_condition;
+	}
 	virtual double SignedDistanceFunction(double sample_x, double sample_y) const { return 0.0; };
 	virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) {};
+
+	BoundaryCondition GetBoundaryCondition() const
+	{
+		return m_boundary_condition;
+	}
+
 	virtual Eigen::Vector2d GetNormal(double sample_x, double sample_y) { return Eigen::Vector2d{}; };
 	virtual double GetBoundaryPhi() { return m_boundary_phi; };
 
 protected:
+	BoundaryCondition m_boundary_condition = BoundaryCondition::Dirichlet;
 	bool m_inverse_sign;
 	double m_boundary_phi = 0.0;
 
