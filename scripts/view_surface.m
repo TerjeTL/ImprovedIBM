@@ -1,5 +1,8 @@
 clc; clear; close all;
 
-load("converged_result.csv");
+phi_data = load("converged_result.csv");
 
-surf(converged_result);
+% Remove unwanted datapoints
+phi_data(phi_data==0) = nan;
+
+surf(phi_data);
