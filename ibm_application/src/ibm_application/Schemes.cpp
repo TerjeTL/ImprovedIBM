@@ -1,14 +1,16 @@
 
 #include "ibm_application/Schemes.h"
+#include <omp.h>
 
 void FTCS_Scheme::BoundaryCondition()
 {
 	auto grid_extents = m_mesh_grid->GetMeshSize();
 	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
 
-	for (size_t i = 0; i < grid_extents.first; i++)
+	#pragma omp parallel for num_threads( 4 )
+	for (int i = 0; i < grid_extents.first; i++)
 	{
-		for (size_t j = 0; j < grid_extents.second; j++)
+		for (int j = 0; j < grid_extents.second; j++)
 		{
 			// skip if node is not a ghost point
 			if (m_mesh_grid->GetCellFlag(i, j) != 2)
@@ -53,9 +55,10 @@ void FTCS_Scheme::Update(double dt, double cfl)
 	
 	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
 
-	for (size_t i = 1; i < grid_extents.first-1; i++)
+	#pragma omp parallel for num_threads( 4 )
+	for (int i = 1; i < grid_extents.first-1; i++)
 	{
-		for (size_t j = 1; j < grid_extents.second-1; j++)
+		for (int j = 1; j < grid_extents.second-1; j++)
 		{
 			// skip is node is a ghost point/inactive
 			if (m_mesh_grid->GetCellFlag(i,j) != 0)

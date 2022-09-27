@@ -4,6 +4,8 @@
 
 void Solver::PerformStep(int steps)
 {
+	TaskStartPrintout(steps);
+
 	auto start_time = std::chrono::high_resolution_clock::now();
 
 	if (steps == -1)
@@ -24,7 +26,7 @@ void Solver::PerformStep(int steps)
 			break;
 		}
 
-		m_selected_scheme->Update(m_dt, m_cfl);
+		m_selected_scheme->Update(m_dt, m_von_neumann_num);
 		m_time += m_dt;
 		m_iterations += 1;
 
@@ -47,6 +49,29 @@ void Solver::CheckConvergence()
 	{
 		m_converged = true;
 	}
+}
+
+void Solver::TaskStartPrintout(int task_iterations)
+{
+	std::ios oldState(nullptr);
+	oldState.copyfmt(std::cout);
+	//--------------------------
+
+	std::cout << std::boolalpha;
+
+	std::cout << "\n============================\n"
+		<< "         Task Start         \n"
+		<< "============================\n"
+		<< "dt: " << m_dt << "\n"
+		<< "r: " << m_von_neumann_num << "\n"
+		<< "Task Start: " << m_time << "\n"
+		<< "Task End: " << m_end_time << "\n"
+		<< "Task Iterations: " << task_iterations << "\n"
+		<< "Current Iteration: " << m_iterations << "\n"
+		<< "Solver Tolerance: " << m_tolerance << "\n";
+
+	//--------------------------
+	std::cout.copyfmt(oldState);
 }
 
 void Solver::TaskFinishedPrintout()

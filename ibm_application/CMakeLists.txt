@@ -1,7 +1,9 @@
 ﻿# CMakeList.txt : CMake project for gnuplot_application, include source and define
 # project specific logic here.
 #
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.10)
+
+find_package(OpenMP REQUIRED)
 
 # Add source to this project's executable.
 add_executable(ibm_application "src/ibm_application/ibm_application.cpp")
@@ -39,6 +41,7 @@ Blaze_Import(
 
 set(SDL_LIBRARIES ${SDL_LIBRARIES} SDL2main SDL2 SDL2_ttf)
 target_link_libraries(ibm_application
+	PUBLIC OpenMP::OpenMP_CXX
 	PRIVATE ${SDL_LIBRARIES}
 	PRIVATE Blaze
 	PRIVATE Eigen3::Eigen

@@ -26,8 +26,8 @@ void writeToCSVfile(std::string name, Eigen::MatrixXd matrix)
 int main()
 {
     // Debugging grid
-    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(22);
-    Solver test_solver{ 0.001, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug };
+    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(202);
+    Solver test_solver{ 0.0005, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug };
 
     // Prepare an SDLGraphics instance
     SDLGraphics sdl_program(grid_debug);
@@ -35,7 +35,7 @@ int main()
     bool exit_menu = false;
     while (!exit_menu)
     {
-        std::cout << "--- Immersed Boundary Method Program ---\n"
+        std::cout << "\n--- Immersed Boundary Method Program ---\n"
             << "Run options:\n"
             << "1. Grid Visualization (SDL)\n"
             << "2. Run one step\n"

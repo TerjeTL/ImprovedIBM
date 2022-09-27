@@ -13,12 +13,13 @@ public:
 		: m_dt(dt), m_selected_scheme(std::move(scheme)), m_grid_mesh(mesh)
 	{
 		m_time = m_start_time;
-		m_cfl = m_alpha * dt / (m_grid_mesh->GetGridCellSize()(0));
+		m_von_neumann_num = m_alpha * dt / (m_grid_mesh->GetGridCellSize()(0));
 	};
 	~Solver() {};
 
 	void PerformStep(int steps = 1);
 	void CheckConvergence();
+	void TaskStartPrintout(int task_iterations);
 	void TaskFinishedPrintout();
 
 private:
@@ -33,7 +34,7 @@ private:
 	double m_end_time = 100.0;
 	double m_time;
 	double m_dt;
-	double m_cfl = 0.0;
+	double m_von_neumann_num = 0.0;
 	int m_iterations = 0;
 
 	double m_tolerance = 1.0e-8;
