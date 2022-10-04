@@ -2,6 +2,7 @@
 #pragma once
 
 #include "ibm_application/SDLGraphics.h"
+#include <filesystem>
 #include <iomanip>
 
 
@@ -45,7 +46,10 @@ void SDLGraphics::SDLGraphicsInitialize()
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
             "Create window and renderer: %s", SDL_GetError());
     }
-    font = TTF_OpenFont("C:/Users/terjetl/Documents/cpp/ImprovedIBM/fonts/Roboto/Roboto-Regular.ttf", 24);
+
+    std::filesystem::path font_path = std::filesystem::current_path().parent_path().parent_path() / "fonts\\Roboto\\Roboto-Regular.ttf";
+    std::cout << font_path.string().c_str() << "\n";
+    font = TTF_OpenFont(font_path.string().c_str(), 24);
 
     SDL_SetWindowTitle(window, "SDL IBM");
 }

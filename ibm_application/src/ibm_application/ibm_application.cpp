@@ -12,22 +12,33 @@
 #include "ibm_application/CartGrid.h"
 #include "ibm_application/Solver.h"
 #include <Eigen/Core>
+#include <highfive/H5Easy.hpp>
+
 
 const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", "\n");
 
 void writeToCSVfile(std::string name, Eigen::MatrixXd matrix)
 {
-    std::filesystem::path file_path = std::filesystem::current_path() / name;
+    std::filesystem::path file_path = std::filesystem::absolute(name);
     std::ofstream file(file_path.string());
     file << matrix.format(CSVFormat);
     file.close();
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    //test hdf5
+    H5Easy::File file("example.h5", H5Easy::File::Overwrite);
+
+    Eigen::MatrixXd A = Eigen::MatrixXd::Random(500,500);
+    H5Easy::dump(file, "/path/to/A", A);
+
+    Eigen::MatrixXd A_2 = H5Easy::load<Eigen::MatrixXd>(file, "/path/to/A");
+
+
     // Debugging grid
-    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(202);
-    Solver test_solver{ 0.0005, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug };
+    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(42);
+    Solver test_solver{ 0.001, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug };
 
     // Prepare an SDLGraphics instance
     SDLGraphics sdl_program(grid_debug);
@@ -35,7 +46,7 @@ int main()
     bool exit_menu = false;
     while (!exit_menu)
     {
-        std::cout << "\n--- Immersed Boundary Method Program ---\n"
+        std::cout << "--- Immersed Boundary Method Program ---\n"
             << "Run options:\n"
             << "1. Grid Visualization (SDL)\n"
             << "2. Run one step\n"
@@ -66,11 +77,8 @@ int main()
         }
         case 2:
         {
-            std::shared_ptr<Circle2D_SDF> inner_cylinder = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 100.0 });
-            //inner_cylinder->SetBoundaryCondition(BoundaryCondition::Neumann);
-
-            grid_debug->AddImmersedBoundary("Inner Cylinder", inner_cylinder);
-            grid_debug->AddImmersedBoundary("Outer Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.44, 200.0, true }));
+            grid_debug->AddImmersedBoundary("Inner Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 100.0 }));
+            grid_debug->AddImmersedBoundary("Outer Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 200.0, true }));
             grid_debug->UpdateGrid();
 
             test_solver.PerformStep(-1);
@@ -78,12 +86,31 @@ int main()
         }
         case 3:
         {
-            std::string filename = "";
-            std::cout << "Save data to file:";
+            std::string filename = "phi_matrix.csv";
+            
+            /*std::cout << "Save data to filename:";
             std::cin >> filename;
-            std::cout << std::endl;
+            std::cout << std::endl;*/
+            
+            Eigen::MatrixXd result = grid_debug->GetPhiMatrix();
 
-            writeToCSVfile(filename, grid_debug->GetPhiMatrix());
+            for (size_t i = 0; i < result.cols(); i++)
+            {
+                for (size_t j = 0; j < result.rows(); j++)
+                {
+                    if (grid_debug->GetCellFlag(i, j) != 0)
+                    {
+                        result(i, j) = 0;
+                    }
+                }
+            }
+
+            if (argc > 1)
+            {
+                filename = "\\" + filename;
+                filename = argv[argc - 1] + filename;
+                writeToCSVfile(filename, result);
+            }
             break;
         }
         default:
