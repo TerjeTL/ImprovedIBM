@@ -25,29 +25,27 @@ target_include_directories(ibm_application
 	PUBLIC "${PROJECT_SOURCE_DIR}/ibm_application/include/"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/SDL/include/"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/SDL_ttf/"
-	PUBLIC "${CMAKE_BINARY_DIR}/_deps/hdf5-src/src/H5FDsubfiling"
+#	PUBLIC "${CMAKE_BINARY_DIR}/_deps/hdf5-src/src/H5FDsubfiling"
 )
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/blaze/cmake")
-include(Blaze_Import)
-Blaze_Import(
-	QUIET
-	BLAS off
-	LAPACK off
-	THREADING off
-	CACHE_SIZE auto
-	VECTORIZATION off
-	STORAGE_ORDER rowMajor
-)
+#include(Blaze_Import)
+#Blaze_Import(
+#	QUIET
+#	BLAS off
+#	LAPACK off
+#	THREADING off
+#	CACHE_SIZE auto
+#	VECTORIZATION off
+#	STORAGE_ORDER rowMajor
+#)
 
 set(SDL_LIBRARIES ${SDL_LIBRARIES} SDL2main SDL2 SDL2_ttf)
 target_link_libraries(ibm_application
 	PRIVATE ${SDL_LIBRARIES}
-	PRIVATE Blaze
+#	PRIVATE Blaze
 	PRIVATE Eigen3::Eigen
-	PUBLIC hdf5-shared
-	PUBLIC hdf5_cpp-shared
-	highfive
+	PRIVATE hdf5_data_export
 )
 
 #print_all_variables()

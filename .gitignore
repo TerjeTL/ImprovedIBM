@@ -35,5 +35,8 @@
 *.vs
 CMakeSettings.json
 
+# Files
+*.h5
+
 # Folders
 build/

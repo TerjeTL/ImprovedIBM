@@ -92,7 +92,7 @@ void Solver::TaskFinishedPrintout()
 		<< "simulation time: " << m_time << "\n"
 		<< "converged: " << m_converged << "\n"
 		<< "iterations: " << m_iterations << "\n"
-		<< "execution time: " << m_execution_time.count() << "\n";
+		<< "execution time: " << m_execution_time.count() << "\n\n";
 
 	//--------------------------
 	std::cout.copyfmt(oldState);
