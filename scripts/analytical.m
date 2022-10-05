@@ -20,8 +20,3 @@ fprintf("Coefficients:\n-------------\n" + ...
     "\tA: %f\n\tB: %f\n", A_sol, B_sol);
 
 
-%%%%%%%%%%%%%%%
-
-h5disp("example_2.h5");
-
-some_mat = h5read("example_2.h5", "/test_dir/A_mat");

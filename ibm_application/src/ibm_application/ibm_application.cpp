@@ -11,6 +11,7 @@
 #include "ibm_application/SDLGraphics.h"
 #include "ibm_application/CartGrid.h"
 #include "ibm_application/Solver.h"
+#include "ibm_application/DataExporter.h"
 #include <Eigen/Core>
 #include <highfive/H5Easy.hpp>
 
@@ -27,18 +28,12 @@ void writeToCSVfile(std::string name, Eigen::MatrixXd matrix)
 
 int main(int argc, char* argv[])
 {
-    //test hdf5
-    H5Easy::File file("example.h5", H5Easy::File::Overwrite);
-
-    Eigen::MatrixXd A = Eigen::MatrixXd::Random(500,500);
-    H5Easy::dump(file, "/path/to/A", A);
-
-    Eigen::MatrixXd A_2 = H5Easy::load<Eigen::MatrixXd>(file, "/path/to/A");
-
-
     // Debugging grid
     std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(42);
-    Solver test_solver{ 0.001, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug };
+    std::shared_ptr<Solver> test_solver = std::make_shared<Solver>( 0.001, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug );
+    std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(test_solver, grid_debug);
+
+    test_solver->SetDataExporter(data_export);
 
     // Prepare an SDLGraphics instance
     SDLGraphics sdl_program(grid_debug);
@@ -77,11 +72,14 @@ int main(int argc, char* argv[])
         }
         case 2:
         {
-            grid_debug->AddImmersedBoundary("Inner Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 100.0 }));
+            std::shared_ptr<Circle2D_SDF> inner_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 10.0 });
+            inner_circle->SetBoundaryCondition(BoundaryCondition::Neumann);
+
+            grid_debug->AddImmersedBoundary("Inner Cylinder", inner_circle);
             grid_debug->AddImmersedBoundary("Outer Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 200.0, true }));
             grid_debug->UpdateGrid();
 
-            test_solver.PerformStep(-1);
+            test_solver->PerformStep(-1);
             break;
         }
         case 3:

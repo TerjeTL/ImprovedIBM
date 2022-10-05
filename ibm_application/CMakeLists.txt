@@ -12,6 +12,7 @@ target_sources(ibm_application PRIVATE
 	"src/ibm_application/CartGrid.cpp"
 	"src/ibm_application/Schemes.cpp"
 	"src/ibm_application/Solver.cpp"
+	"src/ibm_application/DataExporter.cpp"
 )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
@@ -44,6 +45,7 @@ target_link_libraries(ibm_application
 	PRIVATE ${SDL_LIBRARIES}
 	PRIVATE Blaze
 	PRIVATE Eigen3::Eigen
+	PUBLIC hdf5-shared
 	PUBLIC hdf5_cpp-shared
 	highfive
 )

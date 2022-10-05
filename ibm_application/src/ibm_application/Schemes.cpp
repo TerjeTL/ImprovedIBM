@@ -19,6 +19,10 @@ void FTCS_Scheme::BoundaryCondition()
 			auto& ip_ref = m_mesh_grid->GetPhiImagePointMatrixRef();
 			ip_ref(i, j) = m_mesh_grid->BilinearInterpolation(i, j);
 
+			auto image_pt_loc = m_mesh_grid->GetGridCoordinate(m_mesh_grid->GetImagePoint(i, j));
+			Eigen::Vector2d ghost_pt_loc{ i, j };
+
+			auto dl = std::abs((image_pt_loc - ghost_pt_loc).norm());
 			
 			switch (m_mesh_grid->GetBoundaryCondition(i, j))
 			{
@@ -30,8 +34,8 @@ void FTCS_Scheme::BoundaryCondition()
 			}
 			case BoundaryCondition::Neumann:
 			{
-				// GP = IP
-				phi(i, j) = ip_ref(i, j);
+				// GP = IP - dl * d/dn(phi)|BI
+				phi(i, j) = ip_ref(i, j) - dl * m_mesh_grid->GetBoundaryPhi(i, j);
 				break;
 			}
 			default:

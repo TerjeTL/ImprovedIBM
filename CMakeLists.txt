@@ -30,7 +30,10 @@ FetchContent_Declare(
 	GIT_TAG           master
 )
 
+
 set(HDF5_BUILD_CPP_LIB ON)
+set(BUILD_TESTING OFF)
+set(HDF5_BUILD_EXAMPLES OFF)
 FetchContent_Declare(
 	HDF5
 	URL		"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.2/src/hdf5-1.13.2.zip"

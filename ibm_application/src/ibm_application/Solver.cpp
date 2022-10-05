@@ -1,4 +1,5 @@
 #include "ibm_application/Solver.h"
+#include "ibm_application/DataExporter.h"
 
 #include <iostream>
 
@@ -37,6 +38,11 @@ void Solver::PerformStep(int steps)
 		else if (m_iterations == 1)
 		{
 			m_euclidian_norm_first_it = m_selected_scheme->GetEuclidianNorm();
+		}
+
+		if (m_data_export)
+		{
+			m_data_export->AppendCurrentState();
 		}
 	}
 }

@@ -56,7 +56,10 @@ void CartGrid::UpdateGrid()
 double CartGrid::BilinearInterpolation(size_t i, size_t j)
 {
     // Interpolation in grid-space
+    Eigen::Vector2d world_coordinate = image_points.at({ i, j });
     Eigen::Vector2d grid_coordinate = GetGridCoordinate(image_points.at({i, j}));
+    size_t parent_sdf = ghost_point_parent_sdf(i, j);
+    BoundaryCondition boundary = immersed_boundaries.at(parent_sdf)->GetBoundaryCondition();
 
     std::array<Eigen::Vector2i, 4> node_indices;
     std::array<Eigen::Vector2d, 4> node_locations;
@@ -67,28 +70,47 @@ double CartGrid::BilinearInterpolation(size_t i, size_t j)
     node_indices[2] = node_indices[0] + Eigen::Vector2i{ 1,1 };
     node_indices[3] = node_indices[0] + Eigen::Vector2i{ 1,0 };
 
-    for (size_t p = 0; p < node_indices.size(); p++)
-    {
-        if (grid_flags(node_indices[p](0), node_indices[p](1)) == 2)
-        {
-            auto image_pt_loc = GetGridCoordinate(GetImagePoint(node_indices[p](0), node_indices[p](1)));
-
-            node_locations[p] = node_indices[p].cast<double>() + (image_pt_loc - node_indices[p].cast<double>())/2.0;
-            node_phi(p) = boundary_phi(node_indices[p](0), node_indices[p](1));
-        }
-        else
-        {
-            node_locations[p] = node_indices[p].cast<double>();
-            node_phi(p) = phi_matrix(node_indices[p](0), node_indices[p](1));
-        }
-    }
-
     Eigen::Matrix4d vandermonde{
         {1, node_locations[0](0), node_locations[0](1), node_locations[0](0) * node_locations[0](1)},
         {1, node_locations[1](0), node_locations[1](1), node_locations[1](0) * node_locations[1](1)},
         {1, node_locations[2](0), node_locations[2](1), node_locations[2](0) * node_locations[2](1)},
         {1, node_locations[3](0), node_locations[3](1), node_locations[3](0) * node_locations[3](1)}
     };
+
+    for (size_t p = 0; p < node_indices.size(); p++)
+    {
+        Eigen::Vector4d vandermonde_row;
+
+        if (grid_flags(node_indices[p](0), node_indices[p](1)) == 2)
+        {
+            auto image_pt_loc = GetGridCoordinate(GetImagePoint(node_indices[p](0), node_indices[p](1)));
+
+            auto world_normal = immersed_boundaries.at(parent_sdf)->GetNormal(world_coordinate.x(), world_coordinate.y());
+            auto grid_normal = GetGridCoordinate(world_normal);
+            grid_normal.normalize();
+
+            node_locations[p] = node_indices[p].cast<double>() + (image_pt_loc - node_indices[p].cast<double>())/2.0;
+            
+            if (boundary == BoundaryCondition::Dirichlet)
+            {
+                node_phi(p) = boundary_phi(node_indices[p](0), node_indices[p](1));
+                vandermonde_row = { 1, node_locations[p](0), node_locations[p](1), node_locations[p](0) * node_locations[p](1) };
+            }
+            else
+            {
+                node_phi(p) = boundary_phi(node_indices[p](0), node_indices[p](1));
+                vandermonde_row = { 0, grid_normal.x(), grid_normal.y(), node_locations[p](0)*grid_normal.y() + node_locations[p](1)*grid_normal.x() };
+            }
+        }
+        else
+        {
+            node_locations[p] = node_indices[p].cast<double>();
+            node_phi(p) = phi_matrix(node_indices[p](0), node_indices[p](1));
+            vandermonde_row = { 1, node_locations[p](0), node_locations[p](1), node_locations[p](0) * node_locations[p](1) };
+        }
+
+        vandermonde.row(p) = vandermonde_row;
+    }
 
     Eigen::Vector4d coefficients = vandermonde.inverse() * node_phi;
 

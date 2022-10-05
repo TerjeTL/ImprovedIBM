@@ -6,6 +6,8 @@
 #include <memory>
 #include <chrono>
 
+class DataExporter;
+
 class Solver
 {
 public:
@@ -21,10 +23,17 @@ public:
 	void CheckConvergence();
 	void TaskStartPrintout(int task_iterations);
 	void TaskFinishedPrintout();
+	void SetDataExporter(std::shared_ptr<DataExporter> data_exporter) { m_data_export = data_exporter; };
+
+	double GetCurrentTime() const
+	{
+		return m_time;
+	}
 
 private:
 	std::unique_ptr<FTCS_Scheme> m_selected_scheme;
 	std::shared_ptr<CartGrid> m_grid_mesh;
+	std::shared_ptr<DataExporter> m_data_export = nullptr;
 
 	bool m_converged = false;
 
