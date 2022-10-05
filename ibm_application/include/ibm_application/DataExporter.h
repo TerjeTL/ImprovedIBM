@@ -18,6 +18,8 @@ public:
 		m_output_path = std::filesystem::current_path().parent_path().parent_path() / "scripts\\export_data.h5";
 		m_file = H5Easy::File(m_output_path.string(), H5Easy::File::Overwrite);
 	}
+	~DataExporter() = default;
+
 
 	void AppendCurrentState()
 	{

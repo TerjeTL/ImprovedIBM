@@ -28,15 +28,15 @@ void writeToCSVfile(std::string name, Eigen::MatrixXd matrix)
 
 int main(int argc, char* argv[])
 {
-    // Debugging grid
-    std::shared_ptr<CartGrid> grid_debug = std::make_shared<CartGrid>(42);
-    std::shared_ptr<Solver> test_solver = std::make_shared<Solver>( 0.001, std::make_unique<FTCS_Scheme>(grid_debug), grid_debug );
-    std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(test_solver, grid_debug);
+    std::shared_ptr<CartGrid> coarse_grid = std::make_shared<CartGrid>(42);
+    std::shared_ptr<CartGrid> fine_grid = std::make_shared<CartGrid>(84);
+    std::shared_ptr<Solver> test_solver = std::make_shared<Solver>( 0.001, std::make_unique<FTCS_Scheme>(coarse_grid), coarse_grid);
+    std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(test_solver, coarse_grid);
 
     test_solver->SetDataExporter(data_export);
 
     // Prepare an SDLGraphics instance
-    SDLGraphics sdl_program(grid_debug);
+    SDLGraphics sdl_program(coarse_grid);
    
     bool exit_menu = false;
     while (!exit_menu)

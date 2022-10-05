@@ -2,11 +2,20 @@
 
 #include "Schemes.h"
 #include "CartGrid.h"
+#include "RichardsonMethod.h"
 
 #include <memory>
 #include <chrono>
 
 class DataExporter;
+
+// A solution holds a grid and it's selected scheme
+struct Solution
+{
+	double m_dt = 0.0;
+	std::unique_ptr<FTCS_Scheme> m_scheme;
+	std::shared_ptr<CartGrid> m_mesh_grid;
+};
 
 class Solver
 {
@@ -24,6 +33,18 @@ public:
 	void TaskStartPrintout(int task_iterations);
 	void TaskFinishedPrintout();
 	void SetDataExporter(std::shared_ptr<DataExporter> data_exporter) { m_data_export = data_exporter; };
+	void SetRichardsonMethod(std::shared_ptr<RichardsonMethod> richardson_extrapolator) { m_richardson_extrapolator = richardson_extrapolator; };
+
+	void AddSolution(size_t refinement_level, std::unique_ptr<FTCS_Scheme>, std::shared_ptr<CartGrid> grid)
+	{
+		auto dt = m_von_neumann_num * m_grid_mesh->GetGridCellSize()(0) / m_alpha
+		m_solutions[refinement_level] = Solution{}
+	}
+
+	void AddMeshGrid(size_t refinement_level, std::shared_ptr<CartGrid> mesh_grid)
+	{
+		m_mesh_grids[refinement_level] = mesh_grid;
+	}
 
 	double GetCurrentTime() const
 	{
@@ -32,7 +53,8 @@ public:
 
 private:
 	std::unique_ptr<FTCS_Scheme> m_selected_scheme;
-	std::shared_ptr<CartGrid> m_grid_mesh;
+	std::map<size_t, Solution> m_solutions;
+	std::shared_ptr<RichardsonMethod> m_richardson_extrapolator = nullptr;
 	std::shared_ptr<DataExporter> m_data_export = nullptr;
 
 	bool m_converged = false;

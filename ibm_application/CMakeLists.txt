@@ -13,6 +13,7 @@ target_sources(ibm_application PRIVATE
 	"src/ibm_application/Schemes.cpp"
 	"src/ibm_application/Solver.cpp"
 	"src/ibm_application/DataExporter.cpp"
+	"src/ibm_application/RichardsonMethod.cpp"
 )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
