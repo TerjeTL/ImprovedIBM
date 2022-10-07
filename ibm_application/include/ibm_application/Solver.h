@@ -15,7 +15,8 @@ public:
 		: m_dt(dt), m_selected_scheme(std::move(scheme)), m_grid_mesh(mesh)
 	{
 		m_time = m_start_time;
-		m_von_neumann_num = m_alpha * dt / (m_grid_mesh->GetGridCellSize()(0));
+		auto h = m_grid_mesh->GetGridCellSize()(0);
+		m_von_neumann_num = 2.0 * m_alpha * dt / (h*h);
 	};
 	~Solver() {};
 
@@ -46,7 +47,7 @@ private:
 	double m_von_neumann_num = 0.0;
 	int m_iterations = 0;
 
-	double m_tolerance = 1.0e-12;
+	double m_tolerance = 1.0e-8;
 	double m_euclidian_norm_first_it = 0.0;
 
 	std::chrono::duration<double> m_execution_time{ 0.0 };
