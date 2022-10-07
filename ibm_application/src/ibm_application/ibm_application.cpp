@@ -11,6 +11,7 @@
 #include "ibm_application/SDLGraphics.h"
 #include "ibm_application/CartGrid.h"
 #include "ibm_application/Solver.h"
+#include "ibm_application/RichardsonMethod.h"
 #include "ibm_application/DataExporter.h"
 #include <Eigen/Core>
 #include <highfive/H5Easy.hpp>
@@ -30,8 +31,17 @@ int main(int argc, char* argv[])
 {
     std::shared_ptr<CartGrid> coarse_grid = std::make_shared<CartGrid>(42);
     std::shared_ptr<CartGrid> fine_grid = std::make_shared<CartGrid>(84);
-    std::shared_ptr<Solver> test_solver = std::make_shared<Solver>( 0.0001, std::make_unique<FTCS_Scheme>(coarse_grid), coarse_grid);
-    std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(test_solver, coarse_grid);
+
+    std::shared_ptr<RichardsonMethod> richardson_extrapolation = std::make_shared<RichardsonMethod>();
+    richardson_extrapolation->AddMeshGrid(0, coarse_grid);
+    richardson_extrapolation->AddMeshGrid(1, fine_grid);
+
+    std::shared_ptr<Solver> test_solver = std::make_shared<Solver>(0.0001);
+    test_solver->AddSolution(0, std::make_unique<FTCS_Scheme>(coarse_grid), coarse_grid);
+    test_solver->AddSolution(1, std::make_unique<FTCS_Scheme>(fine_grid), fine_grid);
+    test_solver->SetRichardsonMethod(richardson_extrapolation);
+
+    std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(test_solver);
 
     test_solver->SetDataExporter(data_export);
 
@@ -74,10 +84,16 @@ int main(int argc, char* argv[])
         {
             std::shared_ptr<Circle2D_SDF> inner_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 10.0 });
             inner_circle->SetBoundaryCondition(BoundaryCondition::Neumann);
+            
+            std::shared_ptr<Circle2D_SDF> outer_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 200.0, true });
 
-            grid_debug->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            grid_debug->AddImmersedBoundary("Outer Cylinder", std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 200.0, true }));
-            grid_debug->UpdateGrid();
+            coarse_grid->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            coarse_grid->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            coarse_grid->UpdateGrid();
+
+            fine_grid->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            fine_grid->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            fine_grid->UpdateGrid();
 
             test_solver->PerformStep(-1);
             break;
@@ -90,13 +106,13 @@ int main(int argc, char* argv[])
             std::cin >> filename;
             std::cout << std::endl;*/
             
-            Eigen::MatrixXd result = grid_debug->GetPhiMatrix();
+            Eigen::MatrixXd result = coarse_grid->GetPhiMatrix();
 
             for (size_t i = 0; i < result.cols(); i++)
             {
                 for (size_t j = 0; j < result.rows(); j++)
                 {
-                    if (grid_debug->GetCellFlag(i, j) != 0)
+                    if (coarse_grid->GetCellFlag(i, j) != 0)
                     {
                         result(i, j) = 0;
                     }

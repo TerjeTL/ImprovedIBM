@@ -27,9 +27,25 @@ void Solver::PerformStep(int steps)
 			break;
 		}
 
-		m_selected_scheme->Update(m_dt, m_von_neumann_num);
 		m_time += m_dt;
 		m_iterations += 1;
+
+		for (auto& [mesh_level, solution] : m_solutions)
+		{
+			for (size_t i = 0; i < solution.m_iteration_level; i++)
+			{
+				solution.m_scheme->Update(solution.m_dt, solution.m_von_neumann_num);
+				solution.m_time += solution.m_dt;
+			}
+		}
+
+		if (m_richardson_extrapolator)
+		{
+			m_richardson_extrapolator->ApplyExtrapolation();
+			std::string dir = "/solutions/mesh_r/time_data/" + std::to_string(m_time);
+			m_data_export->AppendMatrixData(dir, m_richardson_extrapolator->GetPhiMatrix());
+		}
+		
 
 		if (m_iterations > 1)
 		{
@@ -37,7 +53,7 @@ void Solver::PerformStep(int steps)
 		}
 		else if (m_iterations == 1)
 		{
-			m_euclidian_norm_first_it = m_selected_scheme->GetEuclidianNorm();
+			m_euclidian_norm_first_it = m_solutions.at(0).m_scheme->GetEuclidianNorm();
 		}
 
 		if (m_data_export)
@@ -49,7 +65,7 @@ void Solver::PerformStep(int steps)
 
 void Solver::CheckConvergence()
 {
-	double euclidian_norm = m_selected_scheme->GetEuclidianNorm();
+	double euclidian_norm = m_solutions.at(0).m_scheme->GetEuclidianNorm();
 
 	if (euclidian_norm <= m_tolerance * m_euclidian_norm_first_it)
 	{

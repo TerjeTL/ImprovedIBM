@@ -13,6 +13,9 @@ class DataExporter;
 struct Solution
 {
 	double m_dt = 0.0;
+	double m_von_neumann_num = 0.0;
+	int m_iteration_level = 1;
+	double m_time = 0.0;
 	std::unique_ptr<FTCS_Scheme> m_scheme;
 	std::shared_ptr<CartGrid> m_mesh_grid;
 };
@@ -20,12 +23,10 @@ struct Solution
 class Solver
 {
 public:
-	Solver(double dt, std::unique_ptr<FTCS_Scheme> scheme, std::shared_ptr<CartGrid> mesh)
-		: m_dt(dt), m_selected_scheme(std::move(scheme)), m_grid_mesh(mesh)
+	Solver(double dt)
+		: m_dt(dt)
 	{
 		m_time = m_start_time;
-		auto h = m_grid_mesh->GetGridCellSize()(0);
-		m_von_neumann_num = 2.0 * m_alpha * dt / (h*h);
 	};
 	~Solver() {};
 
@@ -36,15 +37,20 @@ public:
 	void SetDataExporter(std::shared_ptr<DataExporter> data_exporter) { m_data_export = data_exporter; };
 	void SetRichardsonMethod(std::shared_ptr<RichardsonMethod> richardson_extrapolator) { m_richardson_extrapolator = richardson_extrapolator; };
 
-	void AddSolution(size_t refinement_level, std::unique_ptr<FTCS_Scheme>, std::shared_ptr<CartGrid> grid)
+	void AddSolution(size_t refinement_level, std::unique_ptr<FTCS_Scheme> scheme, std::shared_ptr<CartGrid> grid_mesh)
 	{
-		auto dt = m_von_neumann_num * m_grid_mesh->GetGridCellSize()(0) / m_alpha
-		m_solutions[refinement_level] = Solution{}
-	}
+		auto h = grid_mesh->GetGridCellSize()(0);
+		int iteration_level = std::pow(2, refinement_level * 2);
+		auto dt = m_dt / static_cast<double>(iteration_level);
+		auto von_neumann_num = 2.0 * m_alpha * dt / (h * h);
 
-	void AddMeshGrid(size_t refinement_level, std::shared_ptr<CartGrid> mesh_grid)
-	{
-		m_mesh_grids[refinement_level] = mesh_grid;
+		if (refinement_level == 0)
+		{
+			m_dt = dt;
+			m_von_neumann_num = von_neumann_num;
+		}
+
+		m_solutions[refinement_level] = Solution{ dt, von_neumann_num, iteration_level, m_time, std::move(scheme), grid_mesh };
 	}
 
 	double GetCurrentTime() const
@@ -52,8 +58,12 @@ public:
 		return m_time;
 	}
 
+	const std::map<size_t, Solution>& GetSolutions() const
+	{
+		return m_solutions;
+	}
+
 private:
-	std::unique_ptr<FTCS_Scheme> m_selected_scheme;
 	std::map<size_t, Solution> m_solutions;
 	std::shared_ptr<RichardsonMethod> m_richardson_extrapolator = nullptr;
 	std::shared_ptr<DataExporter> m_data_export = nullptr;
