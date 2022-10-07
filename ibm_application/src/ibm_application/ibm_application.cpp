@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 {
     std::shared_ptr<CartGrid> coarse_grid = std::make_shared<CartGrid>(42);
     std::shared_ptr<CartGrid> fine_grid = std::make_shared<CartGrid>(84);
-    std::shared_ptr<Solver> test_solver = std::make_shared<Solver>( 0.001, std::make_unique<FTCS_Scheme>(coarse_grid), coarse_grid);
+    std::shared_ptr<Solver> test_solver = std::make_shared<Solver>( 0.0001, std::make_unique<FTCS_Scheme>(coarse_grid), coarse_grid);
     std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(test_solver, coarse_grid);
 
     test_solver->SetDataExporter(data_export);
