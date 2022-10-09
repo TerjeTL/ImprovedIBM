@@ -4,9 +4,9 @@
 cmake_minimum_required (VERSION 3.24)
 
 # Add source to this project's executable.
-add_executable(ibm_application "src/ibm_application/ibm_application.cpp")
+add_executable(ibm_app "src/ibm_application/ibm_application.cpp")
 
-target_sources(ibm_application PRIVATE
+target_sources(ibm_app PRIVATE
 	"src/ibm_application/SDLGraphics.cpp"
 	"src/ibm_application/GeometrySDF.cpp"
 	"src/ibm_application/CartGrid.cpp"
@@ -16,12 +16,12 @@ target_sources(ibm_application PRIVATE
 )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ibm_application PROPERTY CXX_STANDARD 17)
+  set_property(TARGET ibm_app PROPERTY CXX_STANDARD 17)
 endif()
 
-target_compile_definitions(ibm_application PRIVATE _USE_MATH_DEFINES)
+target_compile_definitions(ibm_app PRIVATE _USE_MATH_DEFINES)
 
-target_include_directories(ibm_application
+target_include_directories(ibm_app
 	PUBLIC "${PROJECT_SOURCE_DIR}/ibm_application/include/"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/SDL/include/"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/SDL_ttf/"
@@ -41,7 +41,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/blaze/cmake")
 #)
 
 set(SDL_LIBRARIES ${SDL_LIBRARIES} SDL2main SDL2 SDL2_ttf)
-target_link_libraries(ibm_application
+target_link_libraries(ibm_app
 	PRIVATE ${SDL_LIBRARIES}
 #	PRIVATE Blaze
 	PRIVATE Eigen3::Eigen
