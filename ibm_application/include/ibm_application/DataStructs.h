@@ -13,6 +13,9 @@ struct Solution
 	int m_iteration_level = 1;
 	double m_time = 0.0;
 	int m_iteration = 0;
+	double euclidian_norm_init = 0.0;
+	bool converged = false;
+
 	std::unique_ptr<FTCS_Scheme> m_scheme;
 	std::shared_ptr<CartGrid> m_mesh_grid;
 };

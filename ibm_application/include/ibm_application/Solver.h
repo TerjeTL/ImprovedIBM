@@ -21,7 +21,7 @@ public:
 	~Solver() {};
 
 	void PerformStep(int steps = 1);
-	void CheckConvergence();
+	void CheckConvergence(Solution& solution);
 	void TaskStartPrintout(int task_iterations);
 	void TaskFinishedPrintout();
 	void SetDataExporter(std::shared_ptr<DataExporter> data_exporter) { m_data_export = data_exporter; };
@@ -40,7 +40,7 @@ public:
 			m_von_neumann_num = von_neumann_num;
 		}
 
-		(*m_solutions)[refinement_level] = Solution{ dt, von_neumann_num, iteration_level, m_time, 0, std::move(scheme), grid_mesh };
+		(*m_solutions)[refinement_level] = Solution{ dt, von_neumann_num, iteration_level, m_time, 0, 0.0, false, std::move(scheme), grid_mesh };
 	}
 
 	double GetCurrentTime() const
@@ -69,7 +69,7 @@ private:
 	double m_von_neumann_num = 0.0;
 	int m_iterations = 0;
 
-	double m_tolerance = 1.0e-8;
+	double m_tolerance = 1.0e-12;
 	double m_euclidian_norm_first_it = 0.0;
 
 	std::chrono::duration<double> m_execution_time{ 0.0 };

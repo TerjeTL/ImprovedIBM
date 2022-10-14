@@ -31,6 +31,8 @@ int main(int argc, char* argv[])
 {
     std::shared_ptr<CartGrid> coarse_grid = std::make_shared<CartGrid>(42);
     std::shared_ptr<CartGrid> fine_grid = std::make_shared<CartGrid>(83);
+    std::shared_ptr<CartGrid> fine_2 = std::make_shared<CartGrid>(165);
+    std::shared_ptr<CartGrid> fine_3 = std::make_shared<CartGrid>(329);
 
     std::shared_ptr<RichardsonMethod> richardson_extrapolation = std::make_shared<RichardsonMethod>();
     richardson_extrapolation->AddMeshGrid(0, coarse_grid);
@@ -39,7 +41,9 @@ int main(int argc, char* argv[])
     std::shared_ptr<Solver> test_solver = std::make_shared<Solver>(0.0001);
     test_solver->AddSolution(0, std::make_unique<FTCS_Scheme>(coarse_grid), coarse_grid);
     test_solver->AddSolution(1, std::make_unique<FTCS_Scheme>(fine_grid), fine_grid);
-    test_solver->SetRichardsonMethod(richardson_extrapolation);
+    test_solver->AddSolution(2, std::make_unique<FTCS_Scheme>(fine_2), fine_2);
+    test_solver->AddSolution(3, std::make_unique<FTCS_Scheme>(fine_3), fine_3);
+    //test_solver->SetRichardsonMethod(richardson_extrapolation);
 
     std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(std::filesystem::current_path().parent_path().parent_path() / "scripts/export_data.h5");
 
@@ -98,7 +102,15 @@ int main(int argc, char* argv[])
             fine_grid->AddImmersedBoundary("Outer Cylinder", outer_circle);
             fine_grid->UpdateGrid();
 
-            test_solver->PerformStep(1000);
+            fine_2->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            fine_2->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            fine_2->UpdateGrid();
+
+            fine_3->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            fine_3->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            fine_3->UpdateGrid();
+
+            test_solver->PerformStep(-1);
             break;
         }
         case 3:

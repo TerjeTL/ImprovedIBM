@@ -17,59 +17,76 @@ bc_outer = h5read("../export_data.h5", "/geometry/outer/bc");
     r_outer, bc_phi_outer, bc_outer);
 
 %% Get Steady State Solution
-
-mesh_0 = steady_state_solution("mesh_0");
-mesh_1 = steady_state_solution("mesh_2");
+fprintf("Loading Steady State Solutions ...")
+mesh_0 = steady_state_solution("mesh_0", 0);
+mesh_1 = steady_state_solution("mesh_1", 0);
+mesh_2 = steady_state_solution("mesh_2", 0);
+mesh_3 = steady_state_solution("mesh_3", 0);
+fprintf(" OK\n")
 
 %% Analytical Meshes
-analytical_mesh_0 = analytical_mesh(mesh_0, A, B, r_inner, r_outer);
-analytical_mesh_1 = analytical_mesh(mesh_1, A, B, r_inner, r_outer);
+fprintf("Generating Analytical Solutions ...")
+analytical_mesh_0 = analytical_mesh(mesh_0, A, B, r_inner, r_outer, 0);
+analytical_mesh_1 = analytical_mesh(mesh_1, A, B, r_inner, r_outer, 0);
+analytical_mesh_2 = analytical_mesh(mesh_2, A, B, r_inner, r_outer, 0);
+analytical_mesh_3 = analytical_mesh(mesh_3, A, B, r_inner, r_outer, 0);
+fprintf(" OK\n")
 
 %% Error Meshes
+fprintf("Calculating Error ...")
 error_0 = abs(mesh_0 - analytical_mesh_0);
 error_1 = abs(mesh_1 - analytical_mesh_1);
+error_2 = abs(mesh_2 - analytical_mesh_2);
+error_3 = abs(mesh_3 - analytical_mesh_3);
+fprintf(" OK\n")
 
-%% Plots
-tiledlayout(2,3)
+%% Error 2-Norm
+fprintf("Calculating Error 2-Norm...")
+error_0_norm = norm(error_0);
+error_test = calculate_two_norm(error_0);
 
-% level 0
-nexttile
-analytical_plot_0 = plot_mesh_surface(analytical_mesh_0);
-zlim([0 250]);
+error_1_norm = norm(error_1);
+error_2_norm = norm(error_2);
+error_3_norm = norm(error_3);
+fprintf(" OK\n")
 
-nexttile
-plot_0 = plot_mesh_surface(mesh_0);
-zlim([0 250]);
+h = [];
+E = [];
 
-nexttile
-error_plot_0 = plot_mesh_surface(error_0);
+h(1) = 1/41;
+h(2) = 1/82;
+h(3) = 1/164;
+h(4) = 1/328;
 
-% level 1
-nexttile
-analytical_plot_1 = plot_mesh_surface(analytical_mesh_1);
-zlim([0 250]);
+E(1) = error_0_norm;
+E(2) = error_1_norm;
+E(3) = error_2_norm;
+E(4) = error_3_norm;
 
-nexttile
-plot_1 = plot_mesh_surface(mesh_1);
-zlim([0 250]);
+second_order = 1.0*h.^(2.0);
 
-nexttile
-error_plot_1 = plot_mesh_surface(error_1);
-zlim([0 0.45]);
+hold on
+loglog(h, E);
+%loglog(h, second_order);
 
-set(gcf,'position',[get(0, 'Screensize')])
+
+ p = polyfit(log(h),log(E),1);
+ z = polyval(p,log(h));
+ loglog(h,exp(z))
+
+ hold off
 
 %% funcs
-function mesh = steady_state_solution(mesh_level_str)
+function mesh = steady_state_solution(mesh_level_str, replace_0)
     dir = "/solutions/" + mesh_level_str + "/time_dict";
     time_list = h5read("../export_data.h5", dir);
     str_time_list = compose('%0.6f', time_list);
     dir = "/solutions/" + mesh_level_str + "/time_data/" + str_time_list(end);
     mesh = h5read("../export_data.h5", dir);
-    mesh(mesh==0) = nan;
+    mesh(mesh==0) = replace_0;
 end
 
-function mesh = analytical_mesh(mesh_size, A, B, r_inner, r_outer)
+function mesh = analytical_mesh(mesh_size, A, B, r_inner, r_outer, replace_0)
     [X, Y] = meshgrid_from_mesh(mesh_size);
     r = sqrt((X-0.5).^2 + (Y-0.5).^2);
 
@@ -81,7 +98,7 @@ function mesh = analytical_mesh(mesh_size, A, B, r_inner, r_outer)
             end
         end
     end
-    mesh(mesh==0) = nan;
+    mesh(mesh==0) = replace_0;
 end
 
 function [X, Y] = meshgrid_from_mesh(mesh)
@@ -94,4 +111,9 @@ end
 function s = plot_mesh_surface(mesh)
     [X, Y] = meshgrid_from_mesh(mesh);
     s = surf(X,Y,mesh,FaceColor='interp');
+end
+
+function err = calculate_two_norm(error_mesh)
+    tmp = sum(error_mesh.^2, 'all') * 1/(size(error_mesh, 1) - 1);
+    err = tmp^(1/2);
 end
