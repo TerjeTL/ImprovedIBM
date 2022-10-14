@@ -32,6 +32,8 @@ public:
 				if (m_mesh_grids.at(0)->GetCellFlag(i, j) == 0)
 				{
 					phi_r(i, j) = coarse(i, j) + (coarse(i, j) - fine(i * 2, j * 2)) / 3.0;
+					//coarse(i, j) = phi_r(i, j);
+					//fine(i*2, j*2) = phi_r(i, j);
 				}
 			}
 		}

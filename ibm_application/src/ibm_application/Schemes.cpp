@@ -61,7 +61,7 @@ void FTCS_Scheme::Update(double dt, double cfl)
 	{
 		for (int j = 1; j < grid_extents.second-1; j++)
 		{
-			// skip is node is a ghost point/inactive
+			// skip if node is a ghost point/inactive
 			if (m_mesh_grid->GetCellFlag(i,j) != 0)
 			{
 				continue;

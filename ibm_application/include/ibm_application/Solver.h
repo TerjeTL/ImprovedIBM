@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DataStructs.h"
 #include "Schemes.h"
 #include "CartGrid.h"
 #include "RichardsonMethod.h"
@@ -8,17 +9,6 @@
 #include <chrono>
 
 class DataExporter;
-
-// A solution holds a grid and it's selected scheme
-struct Solution
-{
-	double m_dt = 0.0;
-	double m_von_neumann_num = 0.0;
-	int m_iteration_level = 1;
-	double m_time = 0.0;
-	std::unique_ptr<FTCS_Scheme> m_scheme;
-	std::shared_ptr<CartGrid> m_mesh_grid;
-};
 
 class Solver
 {
@@ -50,7 +40,7 @@ public:
 			m_von_neumann_num = von_neumann_num;
 		}
 
-		m_solutions[refinement_level] = Solution{ dt, von_neumann_num, iteration_level, m_time, std::move(scheme), grid_mesh };
+		(*m_solutions)[refinement_level] = Solution{ dt, von_neumann_num, iteration_level, m_time, 0, std::move(scheme), grid_mesh };
 	}
 
 	double GetCurrentTime() const
@@ -60,11 +50,11 @@ public:
 
 	const std::map<size_t, Solution>& GetSolutions() const
 	{
-		return m_solutions;
+		return *m_solutions;
 	}
 
 private:
-	std::map<size_t, Solution> m_solutions;
+	std::shared_ptr <std::map<size_t, Solution>> m_solutions = std::make_shared<std::map<size_t, Solution>>();
 	std::shared_ptr<RichardsonMethod> m_richardson_extrapolator = nullptr;
 	std::shared_ptr<DataExporter> m_data_export = nullptr;
 

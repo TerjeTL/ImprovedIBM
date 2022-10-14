@@ -2,6 +2,7 @@
 
 #include "Solver.h"
 #include "CartGrid.h"
+#include "GeometrySDF.h"
 
 #include <filesystem>
 #include <iostream>
@@ -11,21 +12,67 @@
 class DataExporter
 {
 public:
-	DataExporter(std::shared_ptr<Solver> solver)
-		: m_file(H5Easy::File("export_data.h5", H5Easy::File::Overwrite)), m_solver(solver)
+	DataExporter(std::filesystem::path file_path)
+		:	m_output_path(file_path), m_file(H5Easy::File(m_output_path.string(), H5Easy::File::Overwrite))
 	{
-		m_output_path = std::filesystem::current_path().parent_path().parent_path() / "scripts\\export_data.h5";
-		m_file = H5Easy::File(m_output_path.string(), H5Easy::File::Overwrite);
+
 	}
 	~DataExporter() = default;
 
+	void SetDataRef(std::shared_ptr<std::map<size_t, Solution>> solutions)
+	{
+		m_solutions = solutions;
+	}
+
+	void GenerateHeaderInfos()
+	{
+		for (auto const& [mesh_level, solution] : *m_solutions)
+		{
+			std::string curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/time_dict";
+
+			double dt = solution.m_dt;
+			size_t size = solution.m_iteration;
+			std::vector<double> t(size);
+			std::generate(t.begin(), t.end(), [n = 1, &dt]() mutable { return dt * n++; });
+
+			H5Easy::dump(m_file, curr_dir, t);
+		}
+	}
+
+	void WriteGeometry(std::string name, Circle2D_SDF geometry, double radius)
+	{
+		std::string curr_dir = "/geometry/" + name + "/data";
+
+		// radius, x, y, bc_phi
+		auto pos = geometry.GetPosition();
+		int neumann_bc = geometry.GetBoundaryCondition() == BoundaryCondition::Neumann;
+		std::vector<double> data = { radius, pos.x(), pos.y(), geometry.GetBoundaryPhi() };
+		H5Easy::dump(m_file, curr_dir, data);
+
+		curr_dir = "/geometry/" + name + "/bc";
+		H5Easy::dump(m_file, curr_dir, neumann_bc);
+	}
 
 	void AppendCurrentState()
 	{
-		for (auto const& [mesh_level, solution] : m_solver->GetSolutions())
+		for (auto const& [mesh_level, solution] : *m_solutions)
 		{
 			std::string curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + time_dir + "/" + std::to_string(solution.m_time);
-			H5Easy::dump(m_file, curr_dir, solution.m_mesh_grid->GetPhiMatrix());
+
+			// make a copy for now and store only active nodes
+			auto mat = solution.m_mesh_grid->GetPhiMatrix();
+			for (size_t i = 0; i < mat.rows(); i++)
+			{
+				for (size_t j = 0; j < mat.cols(); j++)
+				{
+					if (solution.m_mesh_grid->GetCellFlag(i, j) != 0)
+					{
+						mat(i, j) = 0;
+					}
+				}
+			}
+
+			H5Easy::dump(m_file, curr_dir, mat);
 		}
 	}
 
@@ -34,7 +81,7 @@ public:
 		H5Easy::dump(m_file, dir, mat);
 	}
 private:
-	std::shared_ptr<Solver> m_solver = nullptr;
+	std::shared_ptr<std::map<size_t, Solution>> m_solutions = nullptr;
 
 	std::string root_dir = "/solutions";
 	std::string time_dir = "/time_data";

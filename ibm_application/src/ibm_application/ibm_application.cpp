@@ -30,7 +30,7 @@ void writeToCSVfile(std::string name, Eigen::MatrixXd matrix)
 int main(int argc, char* argv[])
 {
     std::shared_ptr<CartGrid> coarse_grid = std::make_shared<CartGrid>(42);
-    std::shared_ptr<CartGrid> fine_grid = std::make_shared<CartGrid>(84);
+    std::shared_ptr<CartGrid> fine_grid = std::make_shared<CartGrid>(83);
 
     std::shared_ptr<RichardsonMethod> richardson_extrapolation = std::make_shared<RichardsonMethod>();
     richardson_extrapolation->AddMeshGrid(0, coarse_grid);
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
     test_solver->AddSolution(1, std::make_unique<FTCS_Scheme>(fine_grid), fine_grid);
     test_solver->SetRichardsonMethod(richardson_extrapolation);
 
-    std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(test_solver);
+    std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(std::filesystem::current_path().parent_path().parent_path() / "scripts/export_data.h5");
 
     test_solver->SetDataExporter(data_export);
 
@@ -82,10 +82,13 @@ int main(int argc, char* argv[])
         }
         case 2:
         {
-            std::shared_ptr<Circle2D_SDF> inner_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 10.0 });
-            inner_circle->SetBoundaryCondition(BoundaryCondition::Neumann);
+            std::shared_ptr<Circle2D_SDF> inner_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 100.0 });
+            //inner_circle->SetBoundaryCondition(BoundaryCondition::Neumann);
             
             std::shared_ptr<Circle2D_SDF> outer_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 200.0, true });
+
+            data_export->WriteGeometry("inner", *inner_circle, 0.15);
+            data_export->WriteGeometry("outer", *outer_circle, 0.45);
 
             coarse_grid->AddImmersedBoundary("Inner Cylinder", inner_circle);
             coarse_grid->AddImmersedBoundary("Outer Cylinder", outer_circle);
@@ -95,7 +98,7 @@ int main(int argc, char* argv[])
             fine_grid->AddImmersedBoundary("Outer Cylinder", outer_circle);
             fine_grid->UpdateGrid();
 
-            test_solver->PerformStep(-1);
+            test_solver->PerformStep(1000);
             break;
         }
         case 3:

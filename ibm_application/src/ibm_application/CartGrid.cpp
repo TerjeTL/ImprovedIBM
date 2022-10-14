@@ -51,6 +51,8 @@ void CartGrid::UpdateGrid()
             }
         }
     }
+
+    //std::cout << grid_flags;
 }
 
 double CartGrid::BilinearInterpolation(size_t i, size_t j)

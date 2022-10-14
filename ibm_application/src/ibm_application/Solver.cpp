@@ -5,6 +5,8 @@
 
 void Solver::PerformStep(int steps)
 {
+	// Set up data to export
+	m_data_export->SetDataRef(m_solutions);
 	TaskStartPrintout(steps);
 
 	auto start_time = std::chrono::high_resolution_clock::now();
@@ -30,12 +32,13 @@ void Solver::PerformStep(int steps)
 		m_time += m_dt;
 		m_iterations += 1;
 
-		for (auto& [mesh_level, solution] : m_solutions)
+		for (auto& [mesh_level, solution] : *m_solutions)
 		{
 			for (size_t i = 0; i < solution.m_iteration_level; i++)
 			{
 				solution.m_scheme->Update(solution.m_dt, solution.m_von_neumann_num);
 				solution.m_time += solution.m_dt;
+				solution.m_iteration++;
 			}
 		}
 
@@ -53,7 +56,7 @@ void Solver::PerformStep(int steps)
 		}
 		else if (m_iterations == 1)
 		{
-			m_euclidian_norm_first_it = m_solutions.at(0).m_scheme->GetEuclidianNorm();
+			m_euclidian_norm_first_it = m_solutions->at(1).m_scheme->GetEuclidianNorm();
 		}
 
 		if (m_data_export)
@@ -61,11 +64,13 @@ void Solver::PerformStep(int steps)
 			m_data_export->AppendCurrentState();
 		}
 	}
+
+	m_data_export->GenerateHeaderInfos();
 }
 
 void Solver::CheckConvergence()
 {
-	double euclidian_norm = m_solutions.at(0).m_scheme->GetEuclidianNorm();
+	double euclidian_norm = m_solutions->at(1).m_scheme->GetEuclidianNorm();
 
 	if (euclidian_norm <= m_tolerance * m_euclidian_norm_first_it)
 	{
