@@ -35,20 +35,23 @@ void Solver::PerformStep(int steps)
 		int converged_solutions = 0;
 		for (auto& [mesh_level, solution] : *m_solutions)
 		{
-			for (size_t i = 0; i < solution.m_iteration_level; i++)
+			if (!solution.converged)
 			{
-				solution.m_scheme->Update(solution.m_dt, solution.m_von_neumann_num);
-				
-				solution.m_time += solution.m_dt;
-				solution.m_iteration++;
+				for (size_t i = 0; i < solution.m_iteration_level; i++)
+				{
+					solution.m_scheme->Update(solution.m_dt, solution.m_von_neumann_num);
 
-				if (solution.m_iteration > 1)
-				{
-					CheckConvergence(solution);
-				}
-				else if (solution.m_iteration == 1)
-				{
-					solution.euclidian_norm_init = solution.m_scheme->GetEuclidianNorm();
+					solution.m_time += solution.m_dt;
+					solution.m_iteration++;
+
+					if (solution.m_iteration > 1)
+					{
+						CheckConvergence(solution);
+					}
+					else if (solution.m_iteration == 1)
+					{
+						solution.euclidian_norm_init = solution.m_scheme->GetEuclidianNorm();
+					}
 				}
 			}
 
@@ -82,8 +85,9 @@ void Solver::PerformStep(int steps)
 void Solver::CheckConvergence(Solution& solution)
 {
 	double euclidian_norm = solution.m_scheme->GetEuclidianNorm();
+	double tolerance = m_tolerance * solution.euclidian_norm_init;
 
-	if (euclidian_norm <= m_tolerance * solution.euclidian_norm_init)
+	if (euclidian_norm <= tolerance)
 	{
 		solution.converged = true;
 	}

@@ -32,7 +32,7 @@ public:
 
 			double dt = solution.m_dt;
 			size_t size = solution.m_iteration;
-			std::vector<double> t(size);
+			std::vector<double> t(size-1*solution.m_iteration_level);
 			std::generate(t.begin(), t.end(), [n = 1, &dt]() mutable { return dt * n++; });
 
 			H5Easy::dump(m_file, curr_dir, t);
@@ -57,6 +57,11 @@ public:
 	{
 		for (auto const& [mesh_level, solution] : *m_solutions)
 		{
+			if (solution.converged)
+			{
+				continue;
+			}
+
 			std::string curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + time_dir + "/" + std::to_string(solution.m_time);
 
 			// make a copy for now and store only active nodes

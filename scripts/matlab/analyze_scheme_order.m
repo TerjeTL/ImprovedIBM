@@ -42,11 +42,11 @@ fprintf(" OK\n")
 
 %% Error 2-Norm
 fprintf("Calculating Error 2-Norm...")
-error_0_norm = norm(error_0);
+error_0_norm = calculate_two_norm(error_0);
 error_test = calculate_two_norm(error_0);
 
-error_1_norm = norm(error_1);
-error_2_norm = norm(error_2);
+error_1_norm = calculate_two_norm(error_1);
+error_2_norm = calculate_two_norm(error_2);
 error_3_norm = norm(error_3);
 fprintf(" OK\n")
 
@@ -63,18 +63,22 @@ E(2) = error_1_norm;
 E(3) = error_2_norm;
 E(4) = error_3_norm;
 
+first_order = 1.0*h.^(1.0);
 second_order = 1.0*h.^(2.0);
+fourth_order = 1.0*h.^(4.0);
 
 hold on
 loglog(h, E);
-%loglog(h, second_order);
+loglog(h, first_order);
+loglog(h, second_order);
+loglog(h, fourth_order);
 
 
- p = polyfit(log(h),log(E),1);
- z = polyval(p,log(h));
- loglog(h,exp(z))
-
- hold off
+p = polyfit(log(h),log(E),0);
+% z = polyval(p,log(h));
+%loglog(h,exp(z));
+hold off
+set(gca, 'XScale', 'log', 'YScale', 'log');
 
 %% funcs
 function mesh = steady_state_solution(mesh_level_str, replace_0)

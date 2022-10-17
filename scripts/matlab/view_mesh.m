@@ -19,7 +19,7 @@ bc_outer = h5read("../export_data.h5", "/geometry/outer/bc");
 %% Get Steady State Solution
 
 mesh_0 = steady_state_solution("mesh_0");
-mesh_1 = steady_state_solution("mesh_2");
+mesh_1 = steady_state_solution("mesh_3");
 
 %% Analytical Meshes
 analytical_mesh_0 = analytical_mesh(mesh_0, A, B, r_inner, r_outer);
@@ -55,7 +55,7 @@ zlim([0 250]);
 
 nexttile
 error_plot_1 = plot_mesh_surface(error_1);
-zlim([0 0.45]);
+%zlim([0 0.45]);
 
 set(gcf,'position',[get(0, 'Screensize')])
 

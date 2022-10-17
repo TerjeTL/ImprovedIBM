@@ -69,7 +69,7 @@ private:
 	double m_von_neumann_num = 0.0;
 	int m_iterations = 0;
 
-	double m_tolerance = 1.0e-12;
+	double m_tolerance = 1.0e-22;
 	double m_euclidian_norm_first_it = 0.0;
 
 	std::chrono::duration<double> m_execution_time{ 0.0 };
