@@ -17,7 +17,7 @@ bc_outer = h5read("../export_data.h5", "/geometry/outer/bc");
     r_outer, bc_phi_outer, bc_outer);
 
 %% Get Steady State Solution
-fprintf("Loading Steady State Solutions ...")
+fprintf("Loading Steady State Solutions...")
 mesh_0 = steady_state_solution("mesh_0", 0);
 mesh_1 = steady_state_solution("mesh_1", 0);
 mesh_2 = steady_state_solution("mesh_2", 0);
@@ -25,7 +25,7 @@ mesh_3 = steady_state_solution("mesh_3", 0);
 fprintf(" OK\n")
 
 %% Analytical Meshes
-fprintf("Generating Analytical Solutions ...")
+fprintf("Generating Analytical Solutions...")
 analytical_mesh_0 = analytical_mesh(mesh_0, A, B, r_inner, r_outer, 0);
 analytical_mesh_1 = analytical_mesh(mesh_1, A, B, r_inner, r_outer, 0);
 analytical_mesh_2 = analytical_mesh(mesh_2, A, B, r_inner, r_outer, 0);
@@ -33,7 +33,7 @@ analytical_mesh_3 = analytical_mesh(mesh_3, A, B, r_inner, r_outer, 0);
 fprintf(" OK\n")
 
 %% Error Meshes
-fprintf("Calculating Error ...")
+fprintf("Calculating Error Mesh...")
 error_0 = abs(mesh_0 - analytical_mesh_0);
 error_1 = abs(mesh_1 - analytical_mesh_1);
 error_2 = abs(mesh_2 - analytical_mesh_2);
@@ -47,16 +47,16 @@ error_test = calculate_two_norm(error_0);
 
 error_1_norm = calculate_two_norm(error_1);
 error_2_norm = calculate_two_norm(error_2);
-error_3_norm = norm(error_3);
+error_3_norm = calculate_two_norm(error_3);
 fprintf(" OK\n")
 
 h = [];
 E = [];
 
-h(1) = 1/41;
-h(2) = 1/82;
-h(3) = 1/164;
-h(4) = 1/328;
+h(1) = 1/21;
+h(2) = 1/42;
+h(3) = 1/84;
+h(4) = 1/168;
 
 E(1) = error_0_norm;
 E(2) = error_1_norm;
@@ -69,9 +69,9 @@ fourth_order = 1.0*h.^(4.0);
 
 hold on
 loglog(h, E);
-loglog(h, first_order);
-loglog(h, second_order);
-loglog(h, fourth_order);
+loglog(h, first_order, '-k');
+loglog(h, second_order, '--k');
+loglog(h, fourth_order, '-.k');
 
 
 p = polyfit(log(h),log(E),0);
@@ -79,6 +79,13 @@ p = polyfit(log(h),log(E),0);
 %loglog(h,exp(z));
 hold off
 set(gca, 'XScale', 'log', 'YScale', 'log');
+
+xlabel('h','interpreter', 'latex', 'FontSize', 24) 
+ylabel('$|\!|\mathrm{T-T_{ex}}|\!|_2$', 'interpreter', 'latex', 'FontSize', 24);
+% Create legend
+legend1 = legend('Solution', '1. order','2. order', '4. order', 'FontSize', 24);
+set(legend1,...
+    'Position',[0.630952386221006 0.142460322001624 0.267857137588518 0.165476185934884]);
 
 %% funcs
 function mesh = steady_state_solution(mesh_level_str, replace_0)
@@ -118,6 +125,6 @@ function s = plot_mesh_surface(mesh)
 end
 
 function err = calculate_two_norm(error_mesh)
-    tmp = sum(error_mesh.^2, 'all') * 1/(size(error_mesh, 1) - 1);
+    tmp = sum(error_mesh.^2, 'all') * (1/(size(error_mesh, 1) - 1))^2;
     err = tmp^(1/2);
 end
