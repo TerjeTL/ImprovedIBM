@@ -29,21 +29,23 @@ void writeToCSVfile(std::string name, Eigen::MatrixXd matrix)
 
 int main(int argc, char* argv[])
 {
-    std::shared_ptr<CartGrid> coarse_grid = std::make_shared<CartGrid>(42);
-    std::shared_ptr<CartGrid> fine_grid = std::make_shared<CartGrid>(83);
-    std::shared_ptr<CartGrid> fine_2 = std::make_shared<CartGrid>(165);
-    std::shared_ptr<CartGrid> fine_3 = std::make_shared<CartGrid>(329);
+    std::shared_ptr<CartGrid> grid_0 = std::make_shared<CartGrid>(12);
+    std::shared_ptr<CartGrid> grid_1 = std::make_shared<CartGrid>(23);
+    std::shared_ptr<CartGrid> grid_2 = std::make_shared<CartGrid>(45);
+    std::shared_ptr<CartGrid> grid_3 = std::make_shared<CartGrid>(89);
+    std::shared_ptr<CartGrid> grid_4 = std::make_shared<CartGrid>(177);
+    std::shared_ptr<CartGrid> grid_5 = std::make_shared<CartGrid>(352);
     //std::shared_ptr<CartGrid> fine_4 = std::make_shared<CartGrid>(657);
 
     std::shared_ptr<RichardsonMethod> richardson_extrapolation = std::make_shared<RichardsonMethod>();
-    richardson_extrapolation->AddMeshGrid(0, coarse_grid);
-    richardson_extrapolation->AddMeshGrid(1, fine_grid);
 
     std::shared_ptr<Solver> test_solver = std::make_shared<Solver>(0.0001);
-    test_solver->AddSolution(0, std::make_unique<FTCS_Scheme>(coarse_grid), coarse_grid);
-    test_solver->AddSolution(1, std::make_unique<FTCS_Scheme>(fine_grid), fine_grid);
-    test_solver->AddSolution(2, std::make_unique<FTCS_Scheme>(fine_2), fine_2);
-    test_solver->AddSolution(3, std::make_unique<FTCS_Scheme>(fine_3), fine_3);
+    test_solver->AddSolution(0, std::make_unique<FTCS_Scheme>(grid_0), grid_0);
+    test_solver->AddSolution(1, std::make_unique<FTCS_Scheme>(grid_1), grid_1);
+    test_solver->AddSolution(2, std::make_unique<FTCS_Scheme>(grid_2), grid_2);
+    test_solver->AddSolution(3, std::make_unique<FTCS_Scheme>(grid_3), grid_3);
+    test_solver->AddSolution(4, std::make_unique<FTCS_Scheme>(grid_4), grid_4);
+    test_solver->AddSolution(5, std::make_unique<FTCS_Scheme>(grid_5), grid_5);
     //test_solver->AddSolution(4, std::make_unique<FTCS_Scheme>(fine_4), fine_4);
     //test_solver->SetRichardsonMethod(richardson_extrapolation);
 
@@ -52,7 +54,7 @@ int main(int argc, char* argv[])
     test_solver->SetDataExporter(data_export);
 
     // Prepare an SDLGraphics instance
-    SDLGraphics sdl_program(coarse_grid);
+    SDLGraphics sdl_program(grid_0);
    
     bool exit_menu = false;
     while (!exit_menu)
@@ -96,21 +98,29 @@ int main(int argc, char* argv[])
             data_export->WriteGeometry("inner", *inner_circle, 0.15);
             data_export->WriteGeometry("outer", *outer_circle, 0.45);
 
-            coarse_grid->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            coarse_grid->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            coarse_grid->UpdateGrid();
+            grid_0->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            grid_0->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            grid_0->UpdateGrid();
 
-            fine_grid->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            fine_grid->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            fine_grid->UpdateGrid();
+            grid_1->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            grid_1->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            grid_1->UpdateGrid();
 
-            fine_2->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            fine_2->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            fine_2->UpdateGrid();
+            grid_2->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            grid_2->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            grid_2->UpdateGrid();
 
-            fine_3->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            fine_3->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            fine_3->UpdateGrid();
+            grid_3->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            grid_3->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            grid_3->UpdateGrid();
+
+            grid_4->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            grid_4->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            grid_4->UpdateGrid();
+
+            grid_5->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            grid_5->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            grid_5->UpdateGrid();
 
             //fine_4->AddImmersedBoundary("Inner Cylinder", inner_circle);
             //fine_4->AddImmersedBoundary("Outer Cylinder", outer_circle);
@@ -127,13 +137,13 @@ int main(int argc, char* argv[])
             std::cin >> filename;
             std::cout << std::endl;*/
             
-            Eigen::MatrixXd result = coarse_grid->GetPhiMatrix();
+            Eigen::MatrixXd result = grid_0->GetPhiMatrix();
 
             for (size_t i = 0; i < result.cols(); i++)
             {
                 for (size_t j = 0; j < result.rows(); j++)
                 {
-                    if (coarse_grid->GetCellFlag(i, j) != 0)
+                    if (grid_0->GetCellFlag(i, j) != 0)
                     {
                         result(i, j) = 0;
                     }
