@@ -40,7 +40,7 @@ public:
 			m_von_neumann_num = von_neumann_num;
 		}
 
-		(*m_solutions)[refinement_level] = Solution{ dt, von_neumann_num, iteration_level, m_time, 0, 0.0, false, std::move(scheme), grid_mesh };
+		(*m_solutions)[refinement_level] = Solution(m_time, dt, von_neumann_num, iteration_level, std::move(scheme), grid_mesh);
 	}
 
 	double GetCurrentTime() const
@@ -69,7 +69,8 @@ private:
 	double m_von_neumann_num = 0.0;
 	int m_iterations = 0;
 
-	double m_tolerance = 1.0e-18;
+	int m_log_interval = 10;
+	double m_tolerance = 1.0e-4;
 	double m_euclidian_norm_first_it = 0.0;
 
 	std::chrono::duration<double> m_execution_time{ 0.0 };

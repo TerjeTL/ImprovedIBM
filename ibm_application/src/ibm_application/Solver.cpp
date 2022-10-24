@@ -51,6 +51,12 @@ void Solver::PerformStep(int steps)
 					else if (solution.m_iteration == 1)
 					{
 						solution.euclidian_norm_init = solution.m_scheme->GetEuclidianNorm();
+						m_data_export->AppendSolutionData(solution, mesh_level, 0);
+					}
+
+					if (m_data_export && solution.m_iteration % m_log_interval == 0)
+					{
+						m_data_export->AppendSolutionData(solution, mesh_level, solution.m_iteration/m_log_interval);
 					}
 				}
 			}
@@ -75,7 +81,7 @@ void Solver::PerformStep(int steps)
 
 		if (m_data_export)
 		{
-			m_data_export->AppendCurrentState();
+			//m_data_export->AppendCurrentState();
 		}
 	}
 
@@ -84,10 +90,9 @@ void Solver::PerformStep(int steps)
 
 void Solver::CheckConvergence(Solution& solution)
 {
-	double euclidian_norm = solution.m_scheme->GetEuclidianNorm();
-	double tolerance = m_tolerance * solution.euclidian_norm_init;
+	solution.euclidian_norm = solution.m_scheme->GetEuclidianNorm() * static_cast<double>(solution.m_iteration_level * solution.m_iteration_level * solution.m_iteration_level);
 
-	if (euclidian_norm <= tolerance)
+	if (solution.euclidian_norm <= m_tolerance)
 	{
 		solution.converged = true;
 	}

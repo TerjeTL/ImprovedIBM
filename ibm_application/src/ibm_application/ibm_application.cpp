@@ -33,6 +33,7 @@ int main(int argc, char* argv[])
     std::shared_ptr<CartGrid> fine_grid = std::make_shared<CartGrid>(83);
     std::shared_ptr<CartGrid> fine_2 = std::make_shared<CartGrid>(165);
     std::shared_ptr<CartGrid> fine_3 = std::make_shared<CartGrid>(329);
+    //std::shared_ptr<CartGrid> fine_4 = std::make_shared<CartGrid>(657);
 
     std::shared_ptr<RichardsonMethod> richardson_extrapolation = std::make_shared<RichardsonMethod>();
     richardson_extrapolation->AddMeshGrid(0, coarse_grid);
@@ -43,6 +44,7 @@ int main(int argc, char* argv[])
     test_solver->AddSolution(1, std::make_unique<FTCS_Scheme>(fine_grid), fine_grid);
     test_solver->AddSolution(2, std::make_unique<FTCS_Scheme>(fine_2), fine_2);
     test_solver->AddSolution(3, std::make_unique<FTCS_Scheme>(fine_3), fine_3);
+    //test_solver->AddSolution(4, std::make_unique<FTCS_Scheme>(fine_4), fine_4);
     //test_solver->SetRichardsonMethod(richardson_extrapolation);
 
     std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(std::filesystem::current_path().parent_path().parent_path() / "scripts/export_data.h5");
@@ -86,10 +88,10 @@ int main(int argc, char* argv[])
         }
         case 2:
         {
-            std::shared_ptr<Circle2D_SDF> inner_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 100.0 });
+            std::shared_ptr<Circle2D_SDF> inner_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 1.0 });
             //inner_circle->SetBoundaryCondition(BoundaryCondition::Neumann);
             
-            std::shared_ptr<Circle2D_SDF> outer_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 200.0, true });
+            std::shared_ptr<Circle2D_SDF> outer_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 2.0, true });
 
             data_export->WriteGeometry("inner", *inner_circle, 0.15);
             data_export->WriteGeometry("outer", *outer_circle, 0.45);
@@ -109,6 +111,10 @@ int main(int argc, char* argv[])
             fine_3->AddImmersedBoundary("Inner Cylinder", inner_circle);
             fine_3->AddImmersedBoundary("Outer Cylinder", outer_circle);
             fine_3->UpdateGrid();
+
+            //fine_4->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            //fine_4->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            //fine_4->UpdateGrid();
 
             test_solver->PerformStep(-1);
             break;
