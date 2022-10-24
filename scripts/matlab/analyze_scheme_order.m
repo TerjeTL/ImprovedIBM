@@ -24,6 +24,13 @@ mesh_2 = steady_state_solution("mesh_2", 0);
 mesh_3 = steady_state_solution("mesh_3", 0);
 fprintf(" OK\n")
 
+%% Richardson method
+fprintf("Generating Richardson Extrapolated Solutions...")
+r_0 = richardson_extrapolation(mesh_0, mesh_1);
+r_1 = richardson_extrapolation(mesh_1, mesh_2);
+r_2 = richardson_extrapolation(mesh_2, mesh_3);
+fprintf(" OK\n")
+
 %% Analytical Meshes
 fprintf("Generating Analytical Solutions...")
 analytical_mesh_0 = analytical_mesh(mesh_0, A, B, r_inner, r_outer, 0);
@@ -33,11 +40,15 @@ analytical_mesh_3 = analytical_mesh(mesh_3, A, B, r_inner, r_outer, 0);
 fprintf(" OK\n")
 
 %% Error Meshes
-fprintf("Calculating Error Mesh...")
+fprintf("Calculating Error Meshes...")
 error_0 = abs(mesh_0 - analytical_mesh_0);
 error_1 = abs(mesh_1 - analytical_mesh_1);
 error_2 = abs(mesh_2 - analytical_mesh_2);
 error_3 = abs(mesh_3 - analytical_mesh_3);
+
+error_0_r = abs(r_0 - analytical_mesh_0);
+error_1_r = abs(r_1 - analytical_mesh_1);
+error_2_r = abs(r_2 - analytical_mesh_2);
 fprintf(" OK\n")
 
 %% Error 2-Norm
@@ -48,6 +59,10 @@ error_test = calculate_two_norm(error_0);
 error_1_norm = calculate_two_norm(error_1);
 error_2_norm = calculate_two_norm(error_2);
 error_3_norm = calculate_two_norm(error_3);
+
+error_0_norm_r = calculate_two_norm(error_0_r);
+error_1_norm_r = calculate_two_norm(error_1_r);
+error_2_norm_r = calculate_two_norm(error_2_r);
 fprintf(" OK\n")
 
 h = [];
@@ -63,12 +78,18 @@ E(2) = error_1_norm;
 E(3) = error_2_norm;
 E(4) = error_3_norm;
 
+E_r = [];
+E_r(1) = error_0_norm_r;
+E_r(2) = error_1_norm_r;
+E_r(3) = error_2_norm_r;
+
 first_order = 1.0*h.^(1.0);
 second_order = 1.0*h.^(2.0);
 fourth_order = 1.0*h.^(4.0);
 
 hold on
 loglog(h, E);
+loglog(h(1:end-1), E_r);
 loglog(h, first_order, '-k');
 loglog(h, second_order, '--k');
 loglog(h, fourth_order, '-.k');
@@ -127,4 +148,8 @@ end
 function err = calculate_two_norm(error_mesh)
     tmp = sum(error_mesh.^2, 'all') * (1/(size(error_mesh, 1) - 1))^2;
     err = tmp^(1/2);
+end
+
+function richardson_mesh = richardson_extrapolation(coarse_mesh, fine_mesh)
+    richardson_mesh = fine_mesh(1:2:end, 1:2:end) + (fine_mesh(1:2:end, 1:2:end) - coarse_mesh)/3.0;
 end
