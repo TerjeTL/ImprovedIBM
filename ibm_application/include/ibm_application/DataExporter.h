@@ -12,12 +12,20 @@
 class DataExporter
 {
 public:
-	DataExporter(std::filesystem::path file_path)
-		:	m_output_path(file_path), m_file(H5Easy::File(m_output_path.string(), H5Easy::File::Overwrite))
+	enum class LoggingConfig
+	{
+		Transient,
+		Steady
+	};
+
+	DataExporter(std::filesystem::path file_path, LoggingConfig logging_config)
+		:	m_output_path(file_path), m_file(H5Easy::File(m_output_path.string(), H5Easy::File::Overwrite)), m_logging_type(logging_config)
 	{
 
 	}
 	~DataExporter() = default;
+
+	LoggingConfig GetLoggingConfig() const { return m_logging_type; }
 
 	void SetDataRef(std::shared_ptr<std::map<size_t, Solution>> solutions)
 	{
@@ -132,11 +140,36 @@ public:
 	
 	}
 
+	void WriteSteadyState(const Solution& solution, int mesh_level)
+	{
+		// End time	
+		std::string curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/steady_state/time";
+		H5Easy::dump(m_file, curr_dir, solution.m_time);
+
+		// Solution
+		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/steady_state/solution";
+		
+		auto mat = solution.m_mesh_grid->GetPhiMatrix();
+		for (size_t i = 0; i < mat.rows(); i++)
+		{
+			for (size_t j = 0; j < mat.cols(); j++)
+			{
+				if (solution.m_mesh_grid->GetCellFlag(i, j) != 0)
+				{
+					mat(i, j) = 0;
+				}
+			}
+		}
+
+		H5Easy::dump(m_file, curr_dir, mat);
+	}
+
 	void AppendMatrixData(std::string dir, const Eigen::MatrixXd& mat)
 	{
 		H5Easy::dump(m_file, dir, mat);
 	}
 private:
+	LoggingConfig m_logging_type;
 	std::shared_ptr<std::map<size_t, Solution>> m_solutions = nullptr;
 
 	std::string root_dir = "/solutions";

@@ -44,19 +44,44 @@ void Solver::PerformStep(int steps)
 					solution.m_time += solution.m_dt;
 					solution.m_iteration++;
 
-					if (solution.m_iteration > 1)
+					// If we are solving for convergence then calculate convergence
+					if (solution.m_stop_iteration == -1)
 					{
-						CheckConvergence(solution);
+						if (solution.m_iteration > 1)
+						{
+							CheckConvergence(solution);
+						}
+						else if (solution.m_iteration == 1)
+						{
+							solution.euclidian_norm_init = solution.m_scheme->GetEuclidianNorm();
+							m_data_export->AppendSolutionData(solution, mesh_level, 0);
+						}
 					}
-					else if (solution.m_iteration == 1)
+					else // We just want to run until the stop iteration
 					{
-						solution.euclidian_norm_init = solution.m_scheme->GetEuclidianNorm();
-						m_data_export->AppendSolutionData(solution, mesh_level, 0);
+						if (solution.m_iteration == 1)
+						{
+							solution.euclidian_norm_init = solution.m_scheme->GetEuclidianNorm();
+						}
+						else if (solution.m_iteration == solution.m_stop_iteration)
+						{
+							// Make sure we stop here
+							solution.converged = true;
+
+							// Print out
+							solution.TaskFinishedPrintout();
+							
+							// And then write the data
+							m_data_export->WriteSteadyState(solution, mesh_level);
+						}
 					}
 
-					if (m_data_export && solution.m_iteration % m_log_interval == 0)
+					if (m_data_export)
 					{
-						m_data_export->AppendSolutionData(solution, mesh_level, solution.m_iteration/m_log_interval);
+						if ( m_data_export->GetLoggingConfig() == DataExporter::LoggingConfig::Transient && solution.m_iteration % m_log_interval == 0)
+						{
+							m_data_export->AppendSolutionData(solution, mesh_level, solution.m_iteration / m_log_interval);
+						}
 					}
 				}
 			}
@@ -82,6 +107,20 @@ void Solver::PerformStep(int steps)
 		if (m_data_export)
 		{
 			//m_data_export->AppendCurrentState();
+		}
+
+		
+		if (m_iterations % 1 == 0)
+		{
+			m_current_progress = (float)m_iterations / (float)m_reference_iterations * 100.0f;
+
+			auto current_time = std::chrono::high_resolution_clock::now();
+			auto lapsed_time = std::chrono::duration_cast<std::chrono::duration<double>>(current_time - start_time);
+
+			auto slope = lapsed_time.count() / m_current_progress;
+			auto projection = (100.f - m_current_progress) * slope;
+
+			std::cout << "\r" << "Running Simulation... " << (int)m_current_progress << "%   " << "ETA: " << (int)projection << "s              " << std::flush;
 		}
 	}
 
@@ -115,7 +154,7 @@ void Solver::TaskStartPrintout(int task_iterations)
 		<< "Task End: " << m_end_time << "\n"
 		<< "Task Iterations: " << task_iterations << "\n"
 		<< "Current Iteration: " << m_iterations << "\n"
-		<< "Solver Tolerance: " << m_tolerance << "\n";
+		<< "Solver Tolerance: " << m_tolerance << "\n\n";
 
 	//--------------------------
 	std::cout.copyfmt(oldState);
@@ -129,7 +168,7 @@ void Solver::TaskFinishedPrintout()
 	
 	std::cout << std::boolalpha;
 
-	std::cout << "============================\n"
+	std::cout << "\n\n============================\n"
 		<< "simulation time: " << m_time << "\n"
 		<< "converged: " << m_converged << "\n"
 		<< "iterations: " << m_iterations << "\n"

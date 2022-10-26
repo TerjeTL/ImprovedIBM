@@ -58,6 +58,6 @@ target_include_directories(hdf5_data_export
 )
 target_link_libraries(hdf5_data_export INTERFACE
 	hdf5-shared
-	hdf5_cpp-shared
+	#hdf5_cpp-shared
 	highfive
 )

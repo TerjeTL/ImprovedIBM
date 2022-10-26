@@ -3,6 +3,8 @@
 #
 cmake_minimum_required (VERSION 3.24)
 
+find_package(OpenMP REQUIRED)
+
 # Add source to this project's executable.
 add_executable(ibm_application "src/ibm_application/ibm_application.cpp")
 
@@ -43,6 +45,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/blaze/cmake")
 
 set(SDL_LIBRARIES ${SDL_LIBRARIES} SDL2main SDL2 SDL2_ttf)
 target_link_libraries(ibm_application
+	PUBLIC OpenMP::OpenMP_CXX
 	PRIVATE ${SDL_LIBRARIES}
 #	PRIVATE Blaze
 	PRIVATE Eigen3::Eigen

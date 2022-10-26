@@ -27,6 +27,12 @@ void writeToCSVfile(std::string name, Eigen::MatrixXd matrix)
     file.close();
 }
 
+int EquivalentIterations(int refinement_level, int base_iterations)
+{
+    int iteration_level = std::pow(2, refinement_level * 2);
+    return base_iterations * iteration_level;
+}
+
 int main(int argc, char* argv[])
 {
     std::shared_ptr<CartGrid> grid_0 = std::make_shared<CartGrid>(12);
@@ -34,22 +40,26 @@ int main(int argc, char* argv[])
     std::shared_ptr<CartGrid> grid_2 = std::make_shared<CartGrid>(45);
     std::shared_ptr<CartGrid> grid_3 = std::make_shared<CartGrid>(89);
     std::shared_ptr<CartGrid> grid_4 = std::make_shared<CartGrid>(177);
-    std::shared_ptr<CartGrid> grid_5 = std::make_shared<CartGrid>(352);
-    //std::shared_ptr<CartGrid> fine_4 = std::make_shared<CartGrid>(657);
+    std::shared_ptr<CartGrid> grid_5 = std::make_shared<CartGrid>(353);
+    std::shared_ptr<CartGrid> grid_6 = std::make_shared<CartGrid>(705);
+    //std::shared_ptr<CartGrid> grid_7 = std::make_shared<CartGrid>(1409);
 
     std::shared_ptr<RichardsonMethod> richardson_extrapolation = std::make_shared<RichardsonMethod>();
 
-    std::shared_ptr<Solver> test_solver = std::make_shared<Solver>(0.0001);
-    test_solver->AddSolution(0, std::make_unique<FTCS_Scheme>(grid_0), grid_0);
-    test_solver->AddSolution(1, std::make_unique<FTCS_Scheme>(grid_1), grid_1);
-    test_solver->AddSolution(2, std::make_unique<FTCS_Scheme>(grid_2), grid_2);
-    test_solver->AddSolution(3, std::make_unique<FTCS_Scheme>(grid_3), grid_3);
-    test_solver->AddSolution(4, std::make_unique<FTCS_Scheme>(grid_4), grid_4);
-    test_solver->AddSolution(5, std::make_unique<FTCS_Scheme>(grid_5), grid_5);
+    int base_level_iterations = 1200;
+    std::shared_ptr<Solver> test_solver = std::make_shared<Solver>(0.002, base_level_iterations);
+    test_solver->AddSolution(0, std::make_unique<FTCS_Scheme>(grid_0), grid_0, base_level_iterations);
+    test_solver->AddSolution(1, std::make_unique<FTCS_Scheme>(grid_1), grid_1, EquivalentIterations(1, base_level_iterations));
+    test_solver->AddSolution(2, std::make_unique<FTCS_Scheme>(grid_2), grid_2, EquivalentIterations(2, base_level_iterations));
+    test_solver->AddSolution(3, std::make_unique<FTCS_Scheme>(grid_3), grid_3, EquivalentIterations(3, base_level_iterations));
+    test_solver->AddSolution(4, std::make_unique<FTCS_Scheme>(grid_4), grid_4, EquivalentIterations(4, base_level_iterations));
+    test_solver->AddSolution(5, std::make_unique<FTCS_Scheme>(grid_5), grid_5, EquivalentIterations(5, base_level_iterations));
+    test_solver->AddSolution(6, std::make_unique<FTCS_Scheme>(grid_6), grid_6, EquivalentIterations(6, base_level_iterations));
+    //test_solver->AddSolution(7, std::make_unique<FTCS_Scheme>(grid_7), grid_7, EquivalentIterations(7, base_level_iterations));
     //test_solver->AddSolution(4, std::make_unique<FTCS_Scheme>(fine_4), fine_4);
     //test_solver->SetRichardsonMethod(richardson_extrapolation);
 
-    std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(std::filesystem::current_path().parent_path().parent_path() / "scripts/export_data.h5");
+    std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(std::filesystem::current_path().parent_path().parent_path() / "scripts/export_data.h5", DataExporter::LoggingConfig::Steady);
 
     test_solver->SetDataExporter(data_export);
 
@@ -62,7 +72,7 @@ int main(int argc, char* argv[])
         std::cout << "--- Immersed Boundary Method Program ---\n"
             << "Run options:\n"
             << "1. Grid Visualization (SDL)\n"
-            << "2. Run one step\n"
+            << "2. Run Default Configuration\n"
             << "3. Save Data\n"
             << std::endl;
 
@@ -121,6 +131,14 @@ int main(int argc, char* argv[])
             grid_5->AddImmersedBoundary("Inner Cylinder", inner_circle);
             grid_5->AddImmersedBoundary("Outer Cylinder", outer_circle);
             grid_5->UpdateGrid();
+
+            grid_6->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            grid_6->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            grid_6->UpdateGrid();
+
+            //grid_7->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            //grid_7->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            //grid_7->UpdateGrid();
 
             //fine_4->AddImmersedBoundary("Inner Cylinder", inner_circle);
             //fine_4->AddImmersedBoundary("Outer Cylinder", outer_circle);
