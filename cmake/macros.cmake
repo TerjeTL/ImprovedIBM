@@ -1,3 +1,4 @@
+cmake_minimum_required (VERSION 3.24)
 
 macro(print_all_variables)
     message(STATUS "print_all_variables------------------------------------------{")
