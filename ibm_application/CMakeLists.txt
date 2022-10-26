@@ -6,25 +6,25 @@ cmake_minimum_required (VERSION 3.24)
 find_package(OpenMP REQUIRED)
 
 # Add source to this project's executable.
-add_executable(ibm_app "src/ibm_application/ibm_application.cpp")
+add_executable(ibm_application "src/ibm_application/ibm_application.cpp")
 
-target_sources(ibm_app PRIVATE
+target_sources(ibm_application PRIVATE
 	"src/ibm_application/SDLGraphics.cpp"
 	"src/ibm_application/GeometrySDF.cpp"
 	"src/ibm_application/CartGrid.cpp"
 	"src/ibm_application/Schemes.cpp"
 	"src/ibm_application/Solver.cpp"
 	"src/ibm_application/DataExporter.cpp"
-	"src/ibm_application/RichardsonMethod.cpp"
+	
 )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ibm_app PROPERTY CXX_STANDARD 17)
+  set_property(TARGET ibm_application PROPERTY CXX_STANDARD 17)
 endif()
 
-target_compile_definitions(ibm_app PRIVATE _USE_MATH_DEFINES)
+target_compile_definitions(ibm_application PRIVATE _USE_MATH_DEFINES)
 
-target_include_directories(ibm_app
+target_include_directories(ibm_application
 	PUBLIC "${PROJECT_SOURCE_DIR}/ibm_application/include/"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/SDL/include/"
 	PUBLIC "${CMAKE_SOURCE_DIR}/external/SDL_ttf/"

@@ -99,18 +99,10 @@ void Solver::PerformStep(int steps)
 			m_converged = true;
 		}
 
-		if (m_richardson_extrapolator)
-		{
-			m_richardson_extrapolator->ApplyExtrapolation();
-			std::string dir = "/solutions/mesh_r/time_data/" + std::to_string(m_time);
-			m_data_export->AppendMatrixData(dir, m_richardson_extrapolator->GetPhiMatrix());
-		}
-
 		if (m_data_export)
 		{
 			//m_data_export->AppendCurrentState();
 		}
-
 		
 		if (m_iterations % 1 == 0)
 		{
@@ -129,7 +121,7 @@ void Solver::PerformStep(int steps)
 	m_data_export->GenerateHeaderInfos();
 }
 
-void Solver::CheckConvergence(Solution& solution, double norm)
+void Solver::CheckConvergence(Solution& solution)
 {
 	solution.euclidian_norm = solution.m_scheme->GetEuclidianNorm() * static_cast<double>(solution.m_iteration_level * solution.m_iteration_level * solution.m_iteration_level);
 

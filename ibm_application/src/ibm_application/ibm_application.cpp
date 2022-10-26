@@ -11,7 +11,6 @@
 #include "ibm_application/SDLGraphics.h"
 #include "ibm_application/CartGrid.h"
 #include "ibm_application/Solver.h"
-#include "ibm_application/RichardsonMethod.h"
 #include "ibm_application/DataExporter.h"
 #include <Eigen/Core>
 #include <highfive/H5Easy.hpp>
@@ -43,8 +42,6 @@ int main(int argc, char* argv[])
     std::shared_ptr<CartGrid> grid_5 = std::make_shared<CartGrid>(353);
     std::shared_ptr<CartGrid> grid_6 = std::make_shared<CartGrid>(705);
     //std::shared_ptr<CartGrid> grid_7 = std::make_shared<CartGrid>(1409);
-
-    std::shared_ptr<RichardsonMethod> richardson_extrapolation = std::make_shared<RichardsonMethod>();
 
     int base_level_iterations = 1200;
     std::shared_ptr<Solver> test_solver = std::make_shared<Solver>(0.002, base_level_iterations);

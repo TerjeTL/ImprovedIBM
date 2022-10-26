@@ -1,19 +1,19 @@
 clc; clear; close all;
 addpath('./functions/');
 
-FILE = "../export_data.h5";
+FILE = "../seven_levels_ss.h5";
 
 %% Get Geometric Params
 % radius, x, y, bc_phi
-raw_data = h5read("../export_data.h5", "/geometry/inner/data");
+raw_data = h5read(FILE, "/geometry/inner/data");
 r_inner = raw_data(1);
 bc_phi_inner = raw_data(4);
-bc_inner = h5read("../export_data.h5", "/geometry/inner/bc");
+bc_inner = h5read(FILE, "/geometry/inner/bc");
 
-raw_data = h5read("../export_data.h5", "/geometry/outer/data");
+raw_data = h5read(FILE, "/geometry/outer/data");
 r_outer = raw_data(1);
 bc_phi_outer = raw_data(4);
-bc_outer = h5read("../export_data.h5", "/geometry/outer/bc");
+bc_outer = h5read(FILE, "/geometry/outer/bc");
 
 %% Get Solution to Analytical Eqns
 [A, B] = analytical_solver(r_inner, bc_phi_inner, bc_inner, ...
@@ -35,6 +35,9 @@ fprintf("Generating Richardson Extrapolated Solutions...")
 r_0 = richardson_extrapolation(mesh_0, mesh_1);
 r_1 = richardson_extrapolation(mesh_1, mesh_2);
 r_2 = richardson_extrapolation(mesh_2, mesh_3);
+r_3 = richardson_extrapolation(mesh_3, mesh_4);
+r_4 = richardson_extrapolation(mesh_4, mesh_5);
+r_5 = richardson_extrapolation(mesh_5, mesh_6);
 fprintf(" OK\n")
 
 %% Analytical Meshes
@@ -61,6 +64,9 @@ error_6 = abs(mesh_6 - analytical_mesh_6);
 error_0_r = abs(r_0 - analytical_mesh_0);
 error_1_r = abs(r_1 - analytical_mesh_1);
 error_2_r = abs(r_2 - analytical_mesh_2);
+error_3_r = abs(r_3 - analytical_mesh_3);
+error_4_r = abs(r_4 - analytical_mesh_4);
+error_5_r = abs(r_5 - analytical_mesh_5);
 fprintf(" OK\n")
 
 %% Error 2-Norm
@@ -78,6 +84,9 @@ error_6_norm = calculate_two_norm(error_6);
 error_0_norm_r = calculate_two_norm(error_0_r);
 error_1_norm_r = calculate_two_norm(error_1_r);
 error_2_norm_r = calculate_two_norm(error_2_r);
+error_3_norm_r = calculate_two_norm(error_3_r);
+error_4_norm_r = calculate_two_norm(error_4_r);
+error_5_norm_r = calculate_two_norm(error_5_r);
 fprintf(" OK\n")
 
 h = [];
@@ -103,6 +112,9 @@ E_r = [];
 E_r(1) = error_0_norm_r;
 E_r(2) = error_1_norm_r;
 E_r(3) = error_2_norm_r;
+E_r(4) = error_3_norm_r;
+E_r(5) = error_4_norm_r;
+E_r(6) = error_5_norm_r;
 
 first_order = 1.0*h.^(1.0);
 second_order = 1.0*h.^(2.0);
@@ -142,5 +154,7 @@ function err = calculate_two_norm(error_mesh)
 end
 
 function richardson_mesh = richardson_extrapolation(coarse_mesh, fine_mesh)
-    richardson_mesh = fine_mesh(1:2:end, 1:2:end) + (fine_mesh(1:2:end, 1:2:end) - coarse_mesh)/3.0;
+    %richardson_mesh = fine_mesh(1:2:end, 1:2:end) + (fine_mesh(1:2:end, 1:2:end) - coarse_mesh)/3.0;
+    fine_mesh = fine_mesh(1:2:end, 1:2:end);
+    richardson_mesh = fine_mesh + (fine_mesh - coarse_mesh)/3.0;
 end

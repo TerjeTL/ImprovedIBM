@@ -3,8 +3,6 @@
 #include "DataStructs.h"
 #include "Schemes.h"
 #include "CartGrid.h"
-#include "RichardsonMethod.h"
-
 #include <memory>
 #include <chrono>
 
@@ -25,7 +23,6 @@ public:
 	void TaskStartPrintout(int task_iterations);
 	void TaskFinishedPrintout();
 	void SetDataExporter(std::shared_ptr<DataExporter> data_exporter) { m_data_export = data_exporter; };
-	void SetRichardsonMethod(std::shared_ptr<RichardsonMethod> richardson_extrapolator) { m_richardson_extrapolator = richardson_extrapolator; };
 
 	void AddSolution(size_t refinement_level, std::unique_ptr<FTCS_Scheme> scheme, std::shared_ptr<CartGrid> grid_mesh, int iterations = -1)
 	{
@@ -55,7 +52,6 @@ public:
 
 private:
 	std::shared_ptr <std::map<size_t, Solution>> m_solutions = std::make_shared<std::map<size_t, Solution>>();
-	std::shared_ptr<RichardsonMethod> m_richardson_extrapolator = nullptr;
 	std::shared_ptr<DataExporter> m_data_export = nullptr;
 
 	bool m_converged = false;
