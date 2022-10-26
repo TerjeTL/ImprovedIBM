@@ -5,6 +5,8 @@
 
 void Solver::PerformStep(int steps)
 {
+	// Set up data to export
+	m_data_export->SetDataRef(m_solutions);
 	TaskStartPrintout(steps);
 
 	auto start_time = std::chrono::high_resolution_clock::now();
@@ -27,33 +29,111 @@ void Solver::PerformStep(int steps)
 			break;
 		}
 
-		m_selected_scheme->Update(m_dt, m_von_neumann_num);
 		m_time += m_dt;
 		m_iterations += 1;
 
-		if (m_iterations > 1)
+		int converged_solutions = 0;
+		for (auto& [mesh_level, solution] : *m_solutions)
 		{
-			CheckConvergence();
+			if (!solution.converged)
+			{
+				for (size_t i = 0; i < solution.m_iteration_level; i++)
+				{
+					solution.m_scheme->Update(solution.m_dt, solution.m_von_neumann_num);
+
+					solution.m_time += solution.m_dt;
+					solution.m_iteration++;
+
+					// If we are solving for convergence then calculate convergence
+					if (solution.m_stop_iteration == -1)
+					{
+						if (solution.m_iteration > 1)
+						{
+							CheckConvergence(solution);
+						}
+						else if (solution.m_iteration == 1)
+						{
+							solution.euclidian_norm_init = solution.m_scheme->GetEuclidianNorm();
+							m_data_export->AppendSolutionData(solution, mesh_level, 0);
+						}
+					}
+					else // We just want to run until the stop iteration
+					{
+						if (solution.m_iteration == 1)
+						{
+							solution.euclidian_norm_init = solution.m_scheme->GetEuclidianNorm();
+						}
+						else if (solution.m_iteration == solution.m_stop_iteration)
+						{
+							// Make sure we stop here
+							solution.converged = true;
+
+							// Print out
+							solution.TaskFinishedPrintout();
+							
+							// And then write the data
+							m_data_export->WriteSteadyState(solution, mesh_level);
+						}
+					}
+
+					if (m_data_export)
+					{
+						if ( m_data_export->GetLoggingConfig() == DataExporter::LoggingConfig::Transient && solution.m_iteration % m_log_interval == 0)
+						{
+							m_data_export->AppendSolutionData(solution, mesh_level, solution.m_iteration / m_log_interval);
+						}
+					}
+				}
+			}
+
+			if (solution.converged)
+			{
+				converged_solutions++;
+			}
 		}
-		else if (m_iterations == 1)
+
+		if (converged_solutions == (*m_solutions).size())
 		{
-			m_euclidian_norm_first_it = m_selected_scheme->GetEuclidianNorm();
+			m_converged = true;
+		}
+
+		if (m_richardson_extrapolator)
+		{
+			m_richardson_extrapolator->ApplyExtrapolation();
+			std::string dir = "/solutions/mesh_r/time_data/" + std::to_string(m_time);
+			m_data_export->AppendMatrixData(dir, m_richardson_extrapolator->GetPhiMatrix());
 		}
 
 		if (m_data_export)
 		{
-			m_data_export->AppendCurrentState();
+			//m_data_export->AppendCurrentState();
+		}
+
+		
+		if (m_iterations % 1 == 0)
+		{
+			m_current_progress = (float)m_iterations / (float)m_reference_iterations * 100.0f;
+
+			auto current_time = std::chrono::high_resolution_clock::now();
+			auto lapsed_time = std::chrono::duration_cast<std::chrono::duration<double>>(current_time - start_time);
+
+			auto slope = lapsed_time.count() / m_current_progress;
+			auto projection = (100.f - m_current_progress) * slope;
+
+			std::cout << "\r" << "Running Simulation... " << (int)m_current_progress << "%   " << "ETA: " << (int)projection << "s              " << std::flush;
 		}
 	}
+
+	m_data_export->GenerateHeaderInfos();
 }
 
-void Solver::CheckConvergence()
+void Solver::CheckConvergence(Solution& solution)
 {
-	double euclidian_norm = m_selected_scheme->GetEuclidianNorm();
+	solution.euclidian_norm = solution.m_scheme->GetEuclidianNorm() * static_cast<double>(solution.m_iteration_level * solution.m_iteration_level * solution.m_iteration_level);
 
-	if (euclidian_norm <= m_tolerance * m_euclidian_norm_first_it)
+	if (solution.euclidian_norm <= m_tolerance)
 	{
-		m_converged = true;
+		solution.converged = true;
 	}
 }
 
@@ -74,7 +154,7 @@ void Solver::TaskStartPrintout(int task_iterations)
 		<< "Task End: " << m_end_time << "\n"
 		<< "Task Iterations: " << task_iterations << "\n"
 		<< "Current Iteration: " << m_iterations << "\n"
-		<< "Solver Tolerance: " << m_tolerance << "\n";
+		<< "Solver Tolerance: " << m_tolerance << "\n\n";
 
 	//--------------------------
 	std::cout.copyfmt(oldState);
@@ -88,7 +168,7 @@ void Solver::TaskFinishedPrintout()
 	
 	std::cout << std::boolalpha;
 
-	std::cout << "============================\n"
+	std::cout << "\n\n============================\n"
 		<< "simulation time: " << m_time << "\n"
 		<< "converged: " << m_converged << "\n"
 		<< "iterations: " << m_iterations << "\n"

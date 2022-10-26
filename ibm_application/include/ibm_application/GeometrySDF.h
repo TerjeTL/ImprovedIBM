@@ -27,6 +27,10 @@ public:
 	virtual double SignedDistanceFunction(double sample_x, double sample_y) const { return 0.0; };
 	virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) {};
 
+	Eigen::Vector2d GetPosition()
+	{
+		return Eigen::Vector2d{ m_pos_x, m_pos_y };
+	}
 	BoundaryCondition GetBoundaryCondition() const
 	{
 		return m_boundary_condition;

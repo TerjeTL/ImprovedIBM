@@ -8,9 +8,9 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 if (WIN32)
-  set(CMAKE_CXX_FLAGS "-O2 /EHsc")
+  set(CMAKE_CXX_FLAGS "-O2 /EHsc /openmp")
 else()
-  set(CMAKE_CXX_FLAGS "-O2") 
+  set(CMAKE_CXX_FLAGS "-O2 /openmp") 
 endif()
 
 #	CMAKE Utilities

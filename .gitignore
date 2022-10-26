@@ -35,8 +35,12 @@
 *.vs
 CMakeSettings.json
 
-# Files
+# Data Files
 *.h5
+
+# Video Files
+*.avi
+*.mp4
 
 # Folders
 build/
