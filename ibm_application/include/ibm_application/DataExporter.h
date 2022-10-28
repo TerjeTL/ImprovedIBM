@@ -162,6 +162,49 @@ public:
 		}
 
 		H5Easy::dump(m_file, curr_dir, mat);
+
+		// Cell Flags
+		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/steady_state/cell_flags";
+		auto flags = solution.m_mesh_grid->GetGridFlags();
+		H5Easy::dump(m_file, curr_dir, flags);
+
+		// Track the first layer
+		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/steady_state/boundary_values";
+		
+		Eigen::MatrixXd boundary_phi = Eigen::MatrixXd::Zero(mat.rows(), mat.cols());
+		for (size_t i = 0; i < mat.rows(); i++)
+		{
+			for (size_t j = 0; j < mat.cols(); j++)
+			{
+				
+				if (solution.m_mesh_grid->GetCellFlag(i, j) == 2)
+				{
+					auto east = solution.m_mesh_grid->GetCellFlag(i + 1, j);
+					auto west = solution.m_mesh_grid->GetCellFlag(i - 1, j);
+					auto north = solution.m_mesh_grid->GetCellFlag(i, j + 1);
+					auto south = solution.m_mesh_grid->GetCellFlag(i, j - 1);
+
+					if (east == 0)
+					{
+						boundary_phi(i + 1, j) = mat(i + 1, j);
+					}
+					if (west == 0)
+					{
+						boundary_phi(i - 1, j) = mat(i - 1, j);
+					}
+					if (north == 0)
+					{
+						boundary_phi(i, j + 1) = mat(i, j + 1);
+					}
+					if (south == 0)
+					{
+						boundary_phi(i, j - 1) = mat(i, j - 1);
+					}
+				}
+			}
+		}
+
+		H5Easy::dump(m_file, curr_dir, boundary_phi);
 	}
 
 	void AppendMatrixData(std::string dir, const Eigen::MatrixXd& mat)

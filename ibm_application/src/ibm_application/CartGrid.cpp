@@ -2,6 +2,7 @@
 #include "ibm_application/CartGrid.h"
 
 #include <iostream>
+#include <assert.h>
 
 CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(Eigen::MatrixXi::Zero(nn, nn)), phi_matrix(Eigen::MatrixXd::Zero(nn, nn)),
 phi_image_point_matrix(Eigen::MatrixXd::Zero(nn, nn)), boundary_phi(Eigen::MatrixXd::Zero(nn, nn)), ghost_point_parent_sdf(Eigen::MatrixX<size_t>::Zero(nn, nn))
@@ -43,7 +44,9 @@ void CartGrid::UpdateGrid()
                             phi_image_point_matrix(i,j) = BilinearInterpolation(i, j);
                             boundary_phi(i, j) = sdf->GetBoundaryPhi();
                         }
-                        else {
+                        else
+                        {
+                            // Set cell as inactive (solid)
                             grid_flags(i, j) = 1;
                         }
                     }
@@ -53,6 +56,54 @@ void CartGrid::UpdateGrid()
     }
 
     //std::cout << grid_flags;
+}
+
+void CartGrid::InitializeField()
+{
+    assert(immersed_boundaries.size() == 2 && "Can only do custom field initialization with exactly two immersed boundaries");
+
+    for (size_t i = 0UL; i < grid_flags.rows(); ++i) {
+        for (size_t j = 0UL; j < grid_flags.cols(); ++j) {
+
+            // Skip inactive cells 
+            if (grid_flags(i, j) != 0)
+            {
+                continue;
+            }
+
+            double phi_1 = 0.0;
+            double phi_2 = 0.0;
+
+            double dist_1 = 0.0;
+            double dist_2 = 0.0;
+
+            auto x = static_cast<double>(i) * h;
+            auto y = static_cast<double>(j) * h;
+
+            int k = 1;
+            for (auto const& [hash, sdf] : immersed_boundaries)
+            {
+                double dist = sdf->SignedDistanceFunction(x, y);
+                double phi = sdf->GetBoundaryPhi();
+
+                if (k == 1)
+                {
+                    dist_1 = dist;
+                    phi_1 = phi;
+                }
+                else
+                {
+                    dist_2 = dist;
+                    phi_2 = phi;
+                }
+
+                k++;
+            }
+
+            // Linearly interpolate phi between boundaries
+            phi_matrix(i,j) = dist_1 / std::abs(dist_1 + dist_2) * (phi_2 - phi_1) + phi_1;
+        }
+    }
 }
 
 double CartGrid::BilinearInterpolation(size_t i, size_t j)

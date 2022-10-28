@@ -14,7 +14,12 @@ public:
 	CartGrid(size_t nn, double phi_0 = 0.0);
 	~CartGrid() {};
 
+	void InitializeField();
 	void UpdateGrid();
+
+	template <typename T> int sgn(T val) {
+		return (T(0) < val) - (val < T(0));
+	}
 
 	void AddImmersedBoundary(std::string name, std::shared_ptr<GeometrySDF> geometry)
 	{
@@ -87,6 +92,11 @@ public:
 	Eigen::MatrixXd& GetPhiMatrixRef()
 	{
 		return phi_matrix;
+	}
+
+	Eigen::MatrixXi& GetGridFlags()
+	{
+		return grid_flags;
 	}
 
 	Eigen::MatrixXd& GetPhiImagePointMatrixRef()
