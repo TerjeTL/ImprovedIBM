@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
     test_solver->SetDataExporter(data_export);
 
     // Prepare an SDLGraphics instance
-    SDLGraphics sdl_program(grid_0);
+    SDLGraphics sdl_program(grid_1);
    
     bool exit_menu = false;
     while (!exit_menu)

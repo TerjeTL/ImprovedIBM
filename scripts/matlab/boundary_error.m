@@ -20,14 +20,14 @@ bc_outer = h5read(FILE, "/geometry/outer/bc");
     r_outer, bc_phi_outer, bc_outer);
 
 %% Get Steady State Solution
-boundary_value_mesh = h5read(FILE, "/solutions/mesh_0/steady_state/boundary_values");
+boundary_value_mesh = h5read(FILE, "/solutions/mesh_1/steady_state/boundary_values");
 flags = h5read(FILE, "/solutions/mesh_0/steady_state/boundary_values");
 
 [X, Y] = meshgrid_from_mesh(boundary_value_mesh);
 analytical = sqrt((X-0.5).^2 + (Y-0.5).^2);
 analytical = analytical_value(double(A),double(B),analytical);
 analytical(boundary_value_mesh == 0) = 0;
-analytical(boundary_value_mesh < 1.5) = 0;
+analytical(boundary_value_mesh > 1.5) = 0;
 
 
 mesh_1 = load_steady_state_solution(FILE, "mesh_3", nan);
@@ -41,7 +41,7 @@ error = value_sol - value_an;
 yyaxis left
 plot(theta_sol, error)
 yyaxis right
-plot(theta_sol, rho_an)
+plot(theta_sol, rho_an-r_inner)
 
 %% Analytical Meshes
 analytical_mesh_0 = analytical_mesh(mesh_0, A, B, r_inner, r_outer, nan);
@@ -95,7 +95,7 @@ function [theta, value, rho] = convert_to_array(boundary_mat)
 
     theta = theta .* 180/pi;
     
-    boundary_mat(boundary_mat < 1.5) = 0;
+    boundary_mat(boundary_mat > 1.5) = 0;
 
     mesh = boundary_mat;
     mesh_to_array = mesh(mesh > 0);

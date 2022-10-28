@@ -1,7 +1,8 @@
 clc; clear; close all;
 addpath('./functions/');
 
-FILE = "../export_data.h5";
+FILE = "../seven_levels_ss.h5";
+%FILE = "../export_data.h5";
 
 %% Get Geometric Params
 % radius, x, y, bc_phi
@@ -21,9 +22,10 @@ bc_outer = h5read(FILE, "/geometry/outer/bc");
 
 %% Get Steady State Solution
 
-mesh_0 = load_steady_state_solution(FILE, "mesh_0", nan);
+mesh_0 = load_steady_state_solution(FILE, "mesh_1", nan);
 
-mesh_1 = load_steady_state_solution(FILE, "mesh_3", nan);
+mesh_1 = load_steady_state_solution(FILE, "mesh_2", nan);
+mesh_1 = mesh_1(1:2:end, 1:2:end);
 
 %% Analytical Meshes
 analytical_mesh_0 = analytical_mesh(mesh_0, A, B, r_inner, r_outer, nan);
