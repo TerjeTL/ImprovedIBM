@@ -77,6 +77,8 @@ public:
 		return length_scales * h;
 	}
 
+	void UpdateInterpolationCoeffs(size_t i, size_t j);
+
 	double BilinearInterpolation(size_t i, size_t j);
 
 	const Eigen::MatrixXd& GetPhiMatrix() const
@@ -125,6 +127,7 @@ private:
 	Eigen::MatrixXi grid_flags;
 
 	std::map<std::pair<int, int>, Eigen::Vector2d> image_points;
+	std::map<std::pair<int, int>, Eigen::Vector4d> beta_coeffs;
 
 	Eigen::MatrixXd phi_matrix;
 	Eigen::MatrixXd phi_image_point_matrix;

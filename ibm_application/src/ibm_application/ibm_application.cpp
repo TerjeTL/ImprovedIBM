@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
     std::shared_ptr<CartGrid> grid_2 = std::make_shared<CartGrid>(45);
     std::shared_ptr<CartGrid> grid_3 = std::make_shared<CartGrid>(89);
     std::shared_ptr<CartGrid> grid_4 = std::make_shared<CartGrid>(177);
-    //std::shared_ptr<CartGrid> grid_5 = std::make_shared<CartGrid>(353);
+    std::shared_ptr<CartGrid> grid_5 = std::make_shared<CartGrid>(353);
     //std::shared_ptr<CartGrid> grid_6 = std::make_shared<CartGrid>(705);
     //std::shared_ptr<CartGrid> grid_7 = std::make_shared<CartGrid>(1409);
 
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
     test_solver->AddSolution(2, std::make_unique<FTCS_Scheme>(grid_2), grid_2, EquivalentIterations(2, base_level_iterations) );
     test_solver->AddSolution(3, std::make_unique<FTCS_Scheme>(grid_3), grid_3, EquivalentIterations(3, base_level_iterations) );
     test_solver->AddSolution(4, std::make_unique<FTCS_Scheme>(grid_4), grid_4, EquivalentIterations(4, base_level_iterations) );
-    //test_solver->AddSolution(5, std::make_unique<FTCS_Scheme>(grid_5), grid_5, EquivalentIterations(5, base_level_iterations));
+    test_solver->AddSolution(5, std::make_unique<FTCS_Scheme>(grid_5), grid_5, EquivalentIterations(5, base_level_iterations));
     //test_solver->AddSolution(6, std::make_unique<FTCS_Scheme>(grid_6), grid_6, EquivalentIterations(6, base_level_iterations));
     //test_solver->AddSolution(7, std::make_unique<FTCS_Scheme>(grid_7), grid_7, EquivalentIterations(7, base_level_iterations));
     //test_solver->AddSolution(4, std::make_unique<FTCS_Scheme>(fine_4), fine_4);
@@ -130,10 +130,10 @@ int main(int argc, char* argv[])
             grid_4->UpdateGrid();
             grid_4->InitializeField();
 
-            //grid_5->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            //grid_5->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            //grid_5->UpdateGrid();
-            //grid_5->InitializeField();
+            grid_5->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            grid_5->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            grid_5->UpdateGrid();
+            grid_5->InitializeField();
 
             //grid_6->AddImmersedBoundary("Inner Cylinder", inner_circle);
             //grid_6->AddImmersedBoundary("Outer Cylinder", outer_circle);
