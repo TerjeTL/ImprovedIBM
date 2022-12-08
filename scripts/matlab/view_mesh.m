@@ -2,7 +2,7 @@ clc; clear; close all;
 addpath('./functions/');
 
 %FILE = "../seven_levels_ss.h5";
-FILE = "../export_data_high_res.h5";
+FILE = "../export_data.h5";
 
 %% Get Geometric Params
 % radius, x, y, bc_phi
@@ -22,9 +22,8 @@ bc_outer = h5read(FILE, "/geometry/outer/bc");
 
 %% Get Steady State Solution
 
-mesh_0 = load_steady_state_solution(FILE, "mesh_2", nan);
-
-mesh_1 = load_steady_state_solution(FILE, "mesh_3", nan);
+mesh_0 = load_steady_state_solution(FILE, "mesh_3", nan);
+mesh_1 = load_steady_state_solution(FILE, "mesh_4", nan);
 %mesh_1 = mesh_1(1:8:end, 1:8:end);
 
 r_0 = richardson_extrapolation(mesh_0, mesh_1);
@@ -44,11 +43,11 @@ tiledlayout(2,3)
 % level 0
 nexttile
 analytical_plot_0 = plot_mesh_surface(analytical_mesh_0);
-zlim([0 2.5]);
+zlim([0 20]);
 
 nexttile
 plot_0 = plot_mesh_surface(mesh_0);
-zlim([0 2.5]);
+zlim([0 20]);
 
 nexttile
 error_plot_0 = plot_mesh_surface(error_0);
@@ -56,11 +55,11 @@ error_plot_0 = plot_mesh_surface(error_0);
 % level 1
 nexttile
 analytical_plot_1 = plot_mesh_surface(analytical_mesh_0);
-zlim([0 2.5]);
+zlim([0 20]);
 
 nexttile
 plot_1 = plot_mesh_surface(r_0);
-zlim([0 2.5]);
+zlim([0 20]);
 
 nexttile
 error_plot_1 = plot_mesh_surface(error_r);

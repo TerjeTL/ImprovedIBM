@@ -2,7 +2,8 @@ clc; clear; close all;
 addpath('./functions/');
 
 %FILE = "../seven_levels_ss.h5";
-FILE = "../export_data_high_res.h5";
+%FILE = "../export_data_high_res.h5";
+FILE = "../export_data.h5";
 
 %% Get Geometric Params
 % radius, x, y, bc_phi
@@ -28,8 +29,8 @@ mesh_2 = load_steady_state_solution(FILE, "mesh_2", 0);
 mesh_3 = load_steady_state_solution(FILE, "mesh_3", 0);
 mesh_4 = load_steady_state_solution(FILE, "mesh_4", 0);
 mesh_5 = load_steady_state_solution(FILE, "mesh_5", 0);
-mesh_6 = load_steady_state_solution(FILE, "mesh_6", 0);
-mesh_7 = load_steady_state_solution(FILE, "mesh_7", 0);
+%mesh_6 = load_steady_state_solution(FILE, "mesh_6", 0);
+%mesh_7 = load_steady_state_solution(FILE, "mesh_7", 0);
 fprintf(" OK\n")
 
 %% Richardson method
@@ -48,8 +49,8 @@ r_1 = richardson_extrapolation(mesh_1, mesh_2);
 r_2 = richardson_extrapolation(mesh_2, mesh_3);
 r_3 = richardson_extrapolation(mesh_3, mesh_4);
 r_4 = richardson_extrapolation(mesh_4, mesh_5);
-r_5 = richardson_extrapolation(mesh_5, mesh_6);
-r_6 = richardson_extrapolation(mesh_6, mesh_7);
+%r_5 = richardson_extrapolation(mesh_5, mesh_6);
+%r_6 = richardson_extrapolation(mesh_6, mesh_7);
 fprintf(" OK\n")
 
 %% Analytical Meshes
@@ -60,8 +61,8 @@ analytical_mesh_2 = analytical_mesh(mesh_2, A, B, r_inner, r_outer, 0);
 analytical_mesh_3 = analytical_mesh(mesh_3, A, B, r_inner, r_outer, 0);
 analytical_mesh_4 = analytical_mesh(mesh_4, A, B, r_inner, r_outer, 0);
 analytical_mesh_5 = analytical_mesh(mesh_5, A, B, r_inner, r_outer, 0);
-analytical_mesh_6 = analytical_mesh(mesh_6, A, B, r_inner, r_outer, 0);
-analytical_mesh_7 = analytical_mesh(mesh_7, A, B, r_inner, r_outer, 0);
+%analytical_mesh_6 = analytical_mesh(mesh_6, A, B, r_inner, r_outer, 0);
+%analytical_mesh_7 = analytical_mesh(mesh_7, A, B, r_inner, r_outer, 0);
 
 analytical_mesh_0c = crop_boundaries(analytical_mesh_0, r_inner+0.1, r_outer-0.1);
 analytical_mesh_1c = crop_boundaries(analytical_mesh_1, r_inner+0.1, r_outer-0.1);
@@ -80,8 +81,8 @@ error_2 = abs(mesh_2 - analytical_mesh_2);
 error_3 = abs(mesh_3 - analytical_mesh_3);
 error_4 = abs(mesh_4 - analytical_mesh_4);
 error_5 = abs(mesh_5 - analytical_mesh_5);
-error_6 = abs(mesh_6 - analytical_mesh_6);
-error_7 = abs(mesh_7 - analytical_mesh_7);
+%error_6 = abs(mesh_6 - analytical_mesh_6);
+%error_7 = abs(mesh_7 - analytical_mesh_7);
 
 error_0_coarse = error_0;
 error_1_coarse = error_1(1:2:end,1:2:end);
@@ -89,24 +90,24 @@ error_2_coarse = error_2(1:4:end,1:4:end);
 error_3_coarse = error_3(1:8:end,1:8:end);
 error_4_coarse = error_4(1:12:end,1:12:end);
 error_5_coarse = error_5(1:24:end,1:24:end);
-error_6_coarse = error_6(1:48:end,1:48:end);
-error_7_coarse = error_7(1:96:end,1:96:end);
+%error_6_coarse = error_6(1:48:end,1:48:end);
+%error_7_coarse = error_7(1:96:end,1:96:end);
 
 error_0_r = abs(r_0 - analytical_mesh_0);
 error_1_r = abs(r_1 - analytical_mesh_1);
 error_2_r = abs(r_2 - analytical_mesh_2);
 error_3_r = abs(r_3 - analytical_mesh_3);
 error_4_r = abs(r_4 - analytical_mesh_4);
-error_5_r = abs(r_5 - analytical_mesh_5);
-error_6_r = abs(r_6 - analytical_mesh_6);
+%error_5_r = abs(r_5 - analytical_mesh_5);
+%error_6_r = abs(r_6 - analytical_mesh_6);
 
 error_0_r_coarse = error_0_r;
 error_1_r_coarse = error_1_r(1:2:end, 1:2:end);
 error_2_r_coarse = error_2_r(1:4:end, 1:4:end);
 error_3_r_coarse = error_3_r(1:8:end, 1:8:end);
 error_4_r_coarse = error_4_r(1:16:end, 1:16:end);
-error_5_r_coarse = error_5_r(1:32:end, 1:32:end);
-error_6_r_coarse = error_6_r(1:64:end, 1:64:end);
+%error_5_r_coarse = error_5_r(1:32:end, 1:32:end);
+%error_6_r_coarse = error_6_r(1:64:end, 1:64:end);
 
 fprintf(" OK\n")
 
@@ -120,24 +121,24 @@ error_2_norm = calculate_two_norm(error_2);
 error_3_norm = calculate_two_norm(error_3);
 error_4_norm = calculate_two_norm(error_4);
 error_5_norm = calculate_two_norm(error_5);
-error_6_norm = calculate_two_norm(error_6);
-error_7_norm = calculate_two_norm(error_7);
+%error_6_norm = calculate_two_norm(error_6);
+%error_7_norm = calculate_two_norm(error_7);
 
 error_0_norm_r = calculate_two_norm(error_0_r);
 error_1_norm_r = calculate_two_norm(error_1_r);
 error_2_norm_r = calculate_two_norm(error_2_r);
 error_3_norm_r = calculate_two_norm(error_3_r);
 error_4_norm_r = calculate_two_norm(error_4_r);
-error_5_norm_r = calculate_two_norm(error_5_r);
-error_6_norm_r = calculate_two_norm(error_6_r);
+%error_5_norm_r = calculate_two_norm(error_5_r);
+%error_6_norm_r = calculate_two_norm(error_6_r);
 
 error_0_norm_rp = calculate_two_norm_point(error_0_r_coarse, 4, 9);
 error_1_norm_rp = calculate_two_norm_point(error_1_r_coarse, 4, 9);
 error_2_norm_rp = calculate_two_norm_point(error_2_r_coarse, 4, 9);
 error_3_norm_rp = calculate_two_norm_point(error_3_r_coarse, 4, 9);
 error_4_norm_rp = calculate_two_norm_point(error_4_r_coarse, 4, 9);
-error_5_norm_rp = calculate_two_norm_point(error_5_r_coarse, 4, 9);
-error_6_norm_rp = calculate_two_norm_point(error_6_r_coarse, 4, 9);
+%error_5_norm_rp = calculate_two_norm_point(error_5_r_coarse, 4, 9);
+%error_6_norm_rp = calculate_two_norm_point(error_6_r_coarse, 4, 9);
 
 fprintf(" OK\n")
 
@@ -150,8 +151,8 @@ h(3) = 1/44;
 h(4) = 1/88;
 h(5) = 1/176;
 h(6) = 1/352;
-h(7) = 1/704;
-h(8) = 1/1408;
+%h(7) = 1/704;
+%h(8) = 1/1408;
 
 E(1) = error_0_norm;
 E(2) = error_1_norm;
@@ -159,8 +160,8 @@ E(3) = error_2_norm;
 E(4) = error_3_norm;
 E(5) = error_4_norm;
 E(6) = error_5_norm;
-E(7) = error_6_norm;
-E(8) = error_7_norm;
+%E(7) = error_6_norm;
+%E(8) = error_7_norm;
 
 E_r = [];
 E_r(1) = error_0_norm_rp;
@@ -168,8 +169,8 @@ E_r(2) = error_0_norm_rp;
 E_r(3) = error_2_norm_rp;
 E_r(4) = error_3_norm_rp;
 E_r(5) = error_4_norm_rp;
-E_r(6) = error_5_norm_rp;
-E_r(7) = error_6_norm_rp;
+%E_r(6) = error_5_norm_rp;
+%E_r(7) = error_6_norm_rp;
 
 %E_p = [];
 %E_p(1) = error_0_coarse(7,3);
@@ -189,7 +190,7 @@ fourth_order = 1.0*h.^(4.0);
 hold on
 loglog(h, E);
 %loglog(h, E_p);
-loglog(h(1:end-1), E_r*35.);
+loglog(h(1:end-1), E_r*1.);
 loglog(h, first_order, '-k');
 loglog(h, second_order, '--k');
 loglog(h, third_order, '--k');

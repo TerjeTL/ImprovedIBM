@@ -3,12 +3,16 @@
 
 #include <omp.h>
 
+#define MT_ON
+
 void FTCS_Scheme::BoundaryCondition()
 {
 	auto grid_extents = m_mesh_grid->GetMeshSize();
 	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
 
-	#pragma omp parallel for num_threads(8)
+	#ifdef MT_ON
+		#pragma omp parallel for num_threads(8)
+	#endif
 	for (int i = 0; i < grid_extents.first; i++)
 	{
 		for (int j = 0; j < grid_extents.second; j++)
@@ -22,10 +26,14 @@ void FTCS_Scheme::BoundaryCondition()
 			auto& ip_ref = m_mesh_grid->GetPhiImagePointMatrixRef();
 			ip_ref(i, j) = m_mesh_grid->BilinearInterpolation(i, j);
 
-			auto image_pt_loc = m_mesh_grid->GetGridCoordinate(m_mesh_grid->GetImagePoint(i, j));
-			Eigen::Vector2d ghost_pt_loc{ i, j };
+			auto image_pt_loc_wrld = m_mesh_grid->GetImagePoint(i, j);
+			auto image_pt_loc_grid = m_mesh_grid->GetGridCoordinate(image_pt_loc_wrld);
+			Eigen::Vector2d ghost_pt_loc_grid{ i, j };
+			auto ghost_pt_loc_wrld = m_mesh_grid->GetWorldCoordinate(ghost_pt_loc_grid);
 
-			auto dl = std::abs((image_pt_loc - ghost_pt_loc).norm());
+			auto dr = image_pt_loc_wrld - ghost_pt_loc_wrld;
+
+			double dl = std::abs(dr.norm());
 			
 			switch (m_mesh_grid->GetBoundaryCondition(i, j))
 			{
@@ -60,7 +68,9 @@ void FTCS_Scheme::Update(double dt, double cfl)
 	
 	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
 
-	#pragma omp parallel for num_threads(8)
+	#ifdef MT_ON
+		#pragma omp parallel for num_threads(8)
+	#endif
 	for (int i = 1; i < grid_extents.first-1; i++)
 	{
 		for (int j = 1; j < grid_extents.second-1; j++)

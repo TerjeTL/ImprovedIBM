@@ -133,6 +133,8 @@ void CartGrid::UpdateInterpolationCoeffs(size_t i, size_t j)
         {1, node_locations[3](0), node_locations[3](1), node_locations[3](0) * node_locations[3](1)}
     };
 
+    // TASK: set correct boundary row(s) for the vandermonde matrix - | 0 | n_x | n_y | yn_x + x n_y |
+
     for (size_t p = 0; p < node_indices.size(); p++)
     {
         Eigen::Vector4d vandermonde_row;
@@ -142,8 +144,8 @@ void CartGrid::UpdateInterpolationCoeffs(size_t i, size_t j)
             auto image_pt_loc = GetGridCoordinate(GetImagePoint(node_indices[p](0), node_indices[p](1)));
 
             auto world_normal = immersed_boundaries.at(parent_sdf)->GetNormal(world_coordinate.x(), world_coordinate.y());
+            world_normal.normalize();
             auto grid_normal = GetGridCoordinate(world_normal);
-            grid_normal.normalize();
 
             node_locations[p] = node_indices[p].cast<double>() + (image_pt_loc - node_indices[p].cast<double>()) / 2.0;
 
@@ -152,7 +154,7 @@ void CartGrid::UpdateInterpolationCoeffs(size_t i, size_t j)
                 node_phi(p) = boundary_phi(node_indices[p](0), node_indices[p](1));
                 vandermonde_row = { 1, node_locations[p](0), node_locations[p](1), node_locations[p](0) * node_locations[p](1) };
             }
-            else
+            else // Neumann
             {
                 node_phi(p) = boundary_phi(node_indices[p](0), node_indices[p](1));
                 vandermonde_row = { 0, grid_normal.x(), grid_normal.y(), node_locations[p](0) * grid_normal.y() + node_locations[p](1) * grid_normal.x() };
