@@ -38,7 +38,7 @@ void CartGrid::UpdateGrid()
                             auto normal = sdf->GetNormal(x, y);
                             Eigen::Vector2d node{ x, y };
 
-                            Eigen::Vector2d image_point = node + normal * std::abs(sdf->SignedDistanceFunction(x, y)) * 2.0;
+                            Eigen::Vector2d image_point = node + normal * std::abs(sdf->SignedDistanceFunction(x, y)) * m_ip_stencil_length_factor;
                             image_points[{ i, j }] = image_point;
 
                             // Regenerate coefficients for bilinear interpolation

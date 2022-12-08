@@ -1,7 +1,7 @@
 clc; clear; close all;
 addpath('./functions/');
 
-FILE = "../export_data.h5";
+FILE = "../export_data_high_res.h5";
 
 %% Get Geometric Params
 % radius, x, y, bc_phi
@@ -20,8 +20,8 @@ bc_outer = h5read(FILE, "/geometry/outer/bc");
     r_outer, bc_phi_outer, bc_outer);
 
 %% Get Steady State Solution
-boundary_value_mesh = h5read(FILE, "/solutions/mesh_1/steady_state/boundary_values");
-flags = h5read(FILE, "/solutions/mesh_0/steady_state/boundary_values");
+boundary_value_mesh = h5read(FILE, "/solutions/mesh_2/steady_state/boundary_values");
+flags = h5read(FILE, "/solutions/mesh_2/steady_state/boundary_values");
 
 [X, Y] = meshgrid_from_mesh(boundary_value_mesh);
 analytical = sqrt((X-0.5).^2 + (Y-0.5).^2);
@@ -30,7 +30,7 @@ analytical(boundary_value_mesh == 0) = 0;
 analytical(boundary_value_mesh > 1.5) = 0;
 
 
-mesh_1 = load_steady_state_solution(FILE, "mesh_3", nan);
+mesh_1 = load_steady_state_solution(FILE, "mesh_4", nan);
 
 
 [theta_sol, value_sol, rho_sol] = convert_to_array(boundary_value_mesh);

@@ -31,8 +31,8 @@ void FTCS_Scheme::BoundaryCondition()
 			{
 			case BoundaryCondition::Dirichlet:
 			{
-				// GP = 2*BI - IP
-				phi(i, j) = 2 * m_mesh_grid->GetBoundaryPhi(i, j) - ip_ref(i, j);
+				// GP = IP + (BI - IP)*len_factor
+				phi(i, j) = ip_ref(i, j) + (m_mesh_grid->GetBoundaryPhi(i, j) - ip_ref(i, j)) * m_mesh_grid->m_ip_stencil_length_factor;
 				break;
 			}
 			case BoundaryCondition::Neumann:

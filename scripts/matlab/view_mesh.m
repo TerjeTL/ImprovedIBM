@@ -1,8 +1,8 @@
 clc; clear; close all;
 addpath('./functions/');
 
-FILE = "../seven_levels_ss.h5";
-%FILE = "../export_data.h5";
+%FILE = "../seven_levels_ss.h5";
+FILE = "../export_data_high_res.h5";
 
 %% Get Geometric Params
 % radius, x, y, bc_phi
@@ -22,10 +22,12 @@ bc_outer = h5read(FILE, "/geometry/outer/bc");
 
 %% Get Steady State Solution
 
-mesh_0 = load_steady_state_solution(FILE, "mesh_1", nan);
+mesh_0 = load_steady_state_solution(FILE, "mesh_2", nan);
 
-mesh_1 = load_steady_state_solution(FILE, "mesh_2", nan);
-mesh_1 = mesh_1(1:2:end, 1:2:end);
+mesh_1 = load_steady_state_solution(FILE, "mesh_3", nan);
+%mesh_1 = mesh_1(1:8:end, 1:8:end);
+
+r_0 = richardson_extrapolation(mesh_0, mesh_1);
 
 %% Analytical Meshes
 analytical_mesh_0 = analytical_mesh(mesh_0, A, B, r_inner, r_outer, nan);
@@ -34,6 +36,7 @@ analytical_mesh_1 = analytical_mesh(mesh_1, A, B, r_inner, r_outer, nan);
 %% Error Meshes
 error_0 = abs(mesh_0 - analytical_mesh_0);
 error_1 = abs(mesh_1 - analytical_mesh_1);
+error_r = abs(r_0 - analytical_mesh_0);
 
 %% Plots
 tiledlayout(2,3)
@@ -52,15 +55,15 @@ error_plot_0 = plot_mesh_surface(error_0);
 
 % level 1
 nexttile
-analytical_plot_1 = plot_mesh_surface(analytical_mesh_1);
+analytical_plot_1 = plot_mesh_surface(analytical_mesh_0);
 zlim([0 2.5]);
 
 nexttile
-plot_1 = plot_mesh_surface(mesh_1);
+plot_1 = plot_mesh_surface(r_0);
 zlim([0 2.5]);
 
 nexttile
-error_plot_1 = plot_mesh_surface(error_1);
+error_plot_1 = plot_mesh_surface(error_r);
 %zlim([0 0.45]);
 
 set(gcf,'position',[get(0, 'Screensize')])
@@ -69,4 +72,12 @@ set(gcf,'position',[get(0, 'Screensize')])
 function s = plot_mesh_surface(mesh)
     [X, Y] = meshgrid_from_mesh(mesh);
     s = surf(X,Y,mesh,FaceColor='interp');
+end
+
+function richardson_mesh = richardson_extrapolation(coarse_mesh, fine_mesh)
+    richardson_mesh = fine_mesh(1:2:end, 1:2:end) + (fine_mesh(1:2:end, 1:2:end) - coarse_mesh)/3.0;
+    %fine_mesh = fine_mesh(1:2:end, 1:2:end);
+    %richardson_mesh = fine_mesh + (fine_mesh - coarse_mesh)./(2.0^(2.0) - 1);
+    %richardson_mesh = coarse_mesh + (fine_mesh - coarse_mesh).*2.0^(3.0)./(2.0^(3.0) - 1);
+    %richardson_mesh = 4/3 * fine_mesh - 1/3 * coarse_mesh;
 end

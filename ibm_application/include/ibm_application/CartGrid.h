@@ -111,6 +111,9 @@ public:
 	{
 		return bilinear_interp_selection.at({ i, j });
 	}
+
+	static constexpr double m_ip_stencil_length_factor = 2.0; // determines how far into the domain the stencil goes. Based on GP-to-boundary length.
+
 private:
 	std::unordered_map<std::size_t, std::shared_ptr<GeometrySDF>> immersed_boundaries;
 

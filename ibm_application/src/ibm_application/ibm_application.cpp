@@ -135,15 +135,15 @@ int main(int argc, char* argv[])
             grid_5->UpdateGrid();
             grid_5->InitializeField();
 
-            //grid_6->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            //grid_6->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            //grid_6->UpdateGrid();
-            //grid_6->InitializeField();
+            /*grid_6->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            grid_6->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            grid_6->UpdateGrid();
+            grid_6->InitializeField();
 
-            //grid_7->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            //grid_7->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            //grid_7->UpdateGrid();
-            //grid_7->InitializeField();
+            grid_7->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            grid_7->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            grid_7->UpdateGrid();
+            grid_7->InitializeField();*/
 
             //fine_4->AddImmersedBoundary("Inner Cylinder", inner_circle);
             //fine_4->AddImmersedBoundary("Outer Cylinder", outer_circle);
