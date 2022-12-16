@@ -109,8 +109,13 @@ void CartGrid::InitializeField()
     }
 }
 
+
 void CartGrid::UpdateInterpolationCoeffs(size_t i, size_t j)
 {
+    /////////////////////////////////////////////
+    // Jesus is needed for parts of this code  //
+    /////////////////////////////////////////////
+    // 
     // Interpolation in grid-space
     Eigen::Vector2d world_coordinate = image_points.at({ i, j });
     Eigen::Vector2d grid_coordinate = GetGridCoordinate(image_points.at({ i, j }));
@@ -132,8 +137,6 @@ void CartGrid::UpdateInterpolationCoeffs(size_t i, size_t j)
         {1, node_locations[2](0), node_locations[2](1), node_locations[2](0) * node_locations[2](1)},
         {1, node_locations[3](0), node_locations[3](1), node_locations[3](0) * node_locations[3](1)}
     };
-
-    // TASK: set correct boundary row(s) for the vandermonde matrix - | 0 | n_x | n_y | yn_x + x n_y |
 
     for (size_t p = 0; p < node_indices.size(); p++)
     {
@@ -179,7 +182,7 @@ void CartGrid::UpdateInterpolationCoeffs(size_t i, size_t j)
 double CartGrid::BilinearInterpolation(size_t i, size_t j)
 {
     // Interpolation in grid-space
-    //Eigen::Vector2d world_coordinate = image_points.at({ i, j });
+    // Eigen::Vector2d world_coordinate = image_points.at({ i, j });
     Eigen::Vector2d grid_coordinate = GetGridCoordinate(image_points.at({i, j}));
     size_t parent_sdf = ghost_point_parent_sdf(i, j);
     BoundaryCondition boundary = immersed_boundaries.at(parent_sdf)->GetBoundaryCondition();

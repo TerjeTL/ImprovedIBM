@@ -1,6 +1,4 @@
-﻿// gnuplot_application.cpp : Defines the entry point for the application.
-//
-#pragma once
+﻿#pragma once
 
 #include <stdexcept>
 #include <filesystem>

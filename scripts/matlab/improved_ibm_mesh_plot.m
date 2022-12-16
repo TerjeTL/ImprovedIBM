@@ -22,8 +22,8 @@ bc_outer = h5read(FILE, "/geometry/outer/bc");
 
 %% Get Steady State Solution
 
-mesh_0 = load_steady_state_solution(FILE, "mesh_0", nan);
-mesh_1 = load_steady_state_solution(FILE, "mesh_1", nan);
+mesh_0 = load_steady_state_solution(FILE, "mesh_2", nan);
+mesh_1 = load_steady_state_solution(FILE, "mesh_3", nan);
 %mesh_1 = mesh_1(1:8:end, 1:8:end);
 
 r_0 = richardson_extrapolation(mesh_0, mesh_1);
@@ -38,34 +38,37 @@ error_1 = abs(mesh_1 - analytical_mesh_1);
 error_r = abs(r_0 - analytical_mesh_0);
 
 %% Plots
-tiledlayout(2,3)
+tiledlayout(1,3)
 
 % level 0
 nexttile
-analytical_plot_0 = plot_mesh_surface(analytical_mesh_0);
-zlim([0 2]);
+analytical_plot_0 = plot_mesh_surface(error_0);
+%zlim([0 2]);
+ax = gca;
+ax.FontSize = 28;
+xlabel('x', 'FontSize', 24);
+ylabel('y', 'FontSize', 24);
+zlabel('|\Delta T|', 'FontSize', 24);
 
 nexttile
-plot_0 = plot_mesh_surface(mesh_1(1:2:end, 1:2:end));
-zlim([0 2]);
+plot_0 = plot_mesh_surface(error_1(1:2:end, 1:2:end));
+%zlim([0 2]);
+ax = gca;
+ax.FontSize = 28;
+xlabel('x', 'FontSize', 24);
+ylabel('y', 'FontSize', 24);
+zlabel('|\Delta T|', 'FontSize', 24);
+
 
 nexttile
-error_plot_0 = plot_mesh_surface(error_1(1:2:end, 1:2:end));
+error_plot_0 = plot_mesh_surface(error_r);
+ax = gca;
+ax.FontSize = 28;
+xlabel('x', 'FontSize', 24);
+ylabel('y', 'FontSize', 24);
+zlabel('|\Delta T|', 'FontSize', 24);
 
-% level 1
-nexttile
-analytical_plot_1 = plot_mesh_surface(analytical_mesh_0);
-zlim([0 2]);
-
-nexttile
-plot_1 = plot_mesh_surface(r_0);
-zlim([0 2]);
-
-nexttile
-error_plot_1 = plot_mesh_surface(error_r);
-%zlim([0 0.45]);
-
-set(gcf,'position',[get(0, 'Screensize')])
+set(gcf,'position', [44,680,2420,720])
 
 %% funcs
 function s = plot_mesh_surface(mesh)
