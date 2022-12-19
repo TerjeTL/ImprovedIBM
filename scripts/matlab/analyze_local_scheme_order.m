@@ -197,9 +197,9 @@ third_order = 1.0*h.^(3.0);
 fourth_order = 10.0*h.^(4.0);
 
 hold on
-loglog(h, E, 'LineWidth', 2);
+loglog(h, E, '-bo', 'MarkerSize', 10, 'LineWidth', 2);
 %loglog(h, E_p);
-loglog(h(1:end-1), E_r, 'LineWidth', 2);
+loglog(h(1:end-1), E_r, '-^', 'MarkerSize', 10, 'LineWidth', 2);
 loglog(h, first_order, '-k');
 loglog(h, second_order, '--k');
 loglog(h, third_order, ':k');
@@ -222,6 +222,7 @@ legend1 = legend('IBM', 'Improved IBM', '1st order','2nd order', '3rd order', '4
 set(legend1, 'Position',[0.611769804267381 0.172901026854639 0.270513969864041 0.388959379516881]);
 
 set(gcf,'position', [644,100,1200,850]);
+saveas(gcf,'convergence_local','svg');
 
 %% funcs
 function s = plot_mesh_surface(mesh)

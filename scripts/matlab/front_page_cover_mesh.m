@@ -37,14 +37,41 @@ error_0 = abs(mesh_0 - analytical_mesh_0);
 error_1 = abs(mesh_1 - analytical_mesh_1);
 error_r = abs(r_0 - analytical_mesh_0);
 
-%% Plot
-%error_plot_0 = plot_mesh_surface(error_1);
-[X, Y] = meshgrid_from_mesh(error_1(1:2:end,1:2:end));
-s = mesh(X,Y,error_1(1:2:end,1:2:end), EdgeColor="interp", LineWidth=1.5);
-grid off
-set(gca,'visible','off')
+%% Plots
+tiledlayout(2,3)
+
+% level 0
+nexttile
+analytical_plot_0 = plot_mesh_surface(analytical_mesh_0);
+zlim([0 2]);
+
+nexttile
+plot_0 = plot_mesh_surface(mesh_1(1:2:end, 1:2:end));
+zlim([0 2]);
+
+nexttile
+error_plot_0 = plot_mesh_surface(error_1(1:2:end, 1:2:end));
+
+% level 1
+nexttile
+analytical_plot_1 = plot_mesh_surface(analytical_mesh_0);
+zlim([0 2]);
+
+nexttile
+plot_1 = plot_mesh_surface(r_0);
+zlim([0 2]);
+
+nexttile
+error_plot_1 = plot_mesh_surface(error_r);
+%zlim([0 0.45]);
+
 set(gcf,'position',[get(0, 'Screensize')])
 
+%% funcs
+function s = plot_mesh_surface(mesh)
+    [X, Y] = meshgrid_from_mesh(mesh);
+    s = surf(X,Y,mesh,FaceColor='interp');
+end
 
 function richardson_mesh = richardson_extrapolation(coarse_mesh, fine_mesh)
     richardson_mesh = fine_mesh(1:2:end, 1:2:end) + (fine_mesh(1:2:end, 1:2:end) - coarse_mesh)/3.0;

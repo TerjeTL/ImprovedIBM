@@ -38,10 +38,39 @@ error_1 = abs(mesh_1 - analytical_mesh_1);
 error_r = abs(r_0 - analytical_mesh_0);
 
 %% Plots
-tiledlayout(1,3)
+%tiledlayout(3,2)
 
-% level 0
-nexttile
+% % level 0
+% nexttile
+% analytical_plot_0 = plot_mesh_surface(error_0);
+% %zlim([0 2]);
+% ax = gca;
+% ax.FontSize = 28;
+% xlabel('x', 'FontSize', 24);
+% ylabel('y', 'FontSize', 24);
+% zlabel('|\Delta T|', 'FontSize', 24);
+% 
+% nexttile
+% plot_0 = plot_mesh_surface(error_1(1:2:end, 1:2:end));
+% %zlim([0 2]);
+% ax = gca;
+% ax.FontSize = 28;
+% xlabel('x', 'FontSize', 24);
+% ylabel('y', 'FontSize', 24);
+% zlabel('|\Delta T|', 'FontSize', 24);
+% 
+% 
+% nexttile([2 2]);
+% error_plot_0 = plot_mesh_surface(error_r);
+% ax = gca;
+% ax.FontSize = 28;
+% xlabel('x', 'FontSize', 24);
+% ylabel('y', 'FontSize', 24);
+% zlabel('|\Delta T|', 'FontSize', 24);
+% 
+% set(gcf,'position', [0,0,1500,1800])
+% saveas(gcf,'improved_ibm_surfaces','svg')
+
 analytical_plot_0 = plot_mesh_surface(error_0);
 %zlim([0 2]);
 ax = gca;
@@ -49,8 +78,9 @@ ax.FontSize = 28;
 xlabel('x', 'FontSize', 24);
 ylabel('y', 'FontSize', 24);
 zlabel('|\Delta T|', 'FontSize', 24);
+set(gcf,'position', [0,0,650,480])
+saveas(gcf,'improved_ibm_surfaces_1','svg')
 
-nexttile
 plot_0 = plot_mesh_surface(error_1(1:2:end, 1:2:end));
 %zlim([0 2]);
 ax = gca;
@@ -58,17 +88,17 @@ ax.FontSize = 28;
 xlabel('x', 'FontSize', 24);
 ylabel('y', 'FontSize', 24);
 zlabel('|\Delta T|', 'FontSize', 24);
+set(gcf,'position', [0,0,650,480])
+saveas(gcf,'improved_ibm_surfaces_2','svg')
 
-
-nexttile
 error_plot_0 = plot_mesh_surface(error_r);
 ax = gca;
 ax.FontSize = 28;
 xlabel('x', 'FontSize', 24);
 ylabel('y', 'FontSize', 24);
 zlabel('|\Delta T|', 'FontSize', 24);
-
-set(gcf,'position', [44,680,2420,720])
+set(gcf,'position', [0,0,1300,960])
+saveas(gcf,'improved_ibm_surfaces_3','svg')
 
 %% funcs
 function s = plot_mesh_surface(mesh)
