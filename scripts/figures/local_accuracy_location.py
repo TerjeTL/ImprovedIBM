@@ -26,7 +26,7 @@ segs2 = segs1.transpose(1,0,2)
 plt.gca().add_collection(LineCollection(segs1, colors='black', zorder=0))
 plt.gca().add_collection(LineCollection(segs2, colors='black', zorder=0))
 
-plt.scatter(x, y, s=18, c='b', zorder=1)
+plt.scatter(x, y, s=30, c='b', zorder=1)
 
 plt.scatter(x[8][3], y[8][3], s=62, c='r')
 

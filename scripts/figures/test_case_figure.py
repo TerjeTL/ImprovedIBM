@@ -16,7 +16,7 @@ plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
-n_cell_x = 11
+n_cell_x = 22
 n_cell_y = n_cell_x
 
 x, y = np.meshgrid(np.linspace(0,1, n_cell_x+1), np.linspace(0, 1, n_cell_y+1))
@@ -26,7 +26,7 @@ segs2 = segs1.transpose(1,0,2)
 plt.gca().add_collection(LineCollection(segs1, colors='black', zorder=0))
 plt.gca().add_collection(LineCollection(segs2, colors='black', zorder=0))
 
-plt.scatter(x, y, s=18, c='b', zorder=1)
+plt.scatter(x, y, s=30, c='b', zorder=1)
 
 # geometry
 r_inner = 0.15

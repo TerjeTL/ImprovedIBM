@@ -1,4 +1,6 @@
 
+// This file defines the cartesian grid
+
 #include "ibm_application/CartGrid.h"
 
 #include <iostream>
@@ -10,6 +12,7 @@ phi_image_point_matrix(Eigen::MatrixXd::Zero(nn, nn)), boundary_phi(Eigen::Matri
     h = length_scales(0) / static_cast<double>(nn - 1);
 }
 
+// Function to update grid flags and compute beta coefficents
 void CartGrid::UpdateGrid()
 {
     for (auto const& [hash, sdf] : immersed_boundaries)
@@ -57,10 +60,10 @@ void CartGrid::UpdateGrid()
             }
         }
     }
-
-    //std::cout << grid_flags;
 }
 
+
+// Apply linear distribution to the initialization
 void CartGrid::InitializeField()
 {
     assert(immersed_boundaries.size() == 2 && "Can only do custom field initialization with exactly two immersed boundaries");
@@ -109,13 +112,9 @@ void CartGrid::InitializeField()
     }
 }
 
-
+// Update beta coefficients
 void CartGrid::UpdateInterpolationCoeffs(size_t i, size_t j)
 {
-    /////////////////////////////////////////////
-    // Jesus is needed for parts of this code  //
-    /////////////////////////////////////////////
-    // 
     // Interpolation in grid-space
     Eigen::Vector2d world_coordinate = image_points.at({ i, j });
     Eigen::Vector2d grid_coordinate = GetGridCoordinate(image_points.at({ i, j }));

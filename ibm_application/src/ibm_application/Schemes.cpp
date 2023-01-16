@@ -58,7 +58,7 @@ void FTCS_Scheme::BoundaryCondition()
 	}
 }
 
-void FTCS_Scheme::Update(double dt, double cfl)
+void FTCS_Scheme::Update(double dt, double r)
 {
 	BoundaryCondition();
 
@@ -81,7 +81,7 @@ void FTCS_Scheme::Update(double dt, double cfl)
 				continue;
 			}
 
-			phi(i, j) = phi_old(i, j) + 0.5 * cfl * (phi_old(i + 1, j) - 2 * phi_old(i, j) + phi_old(i - 1, j) 
+			phi(i, j) = phi_old(i, j) + 1.0 * r * (phi_old(i + 1, j) - 2 * phi_old(i, j) + phi_old(i - 1, j) 
 					+ phi_old(i, j + 1) - 2 * phi_old(i, j) + phi_old(i, j - 1));
 		}
 	}
