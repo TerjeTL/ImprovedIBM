@@ -219,3 +219,32 @@ double CartGrid::BilinearInterpolation(size_t i, size_t j)
 
     return phi;
 }
+
+// Implementing WLSQ method
+
+void CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
+{
+    // get the selection of nodes
+    
+    // start by getting center location of node selection square (god gave us no solution for the circle problem)
+    auto image_point = GetGridCoordinate(GetImagePoint(i, j));
+    Eigen::Vector2d ghost_point = { static_cast<double>(i), static_cast<double>(j) };
+
+    auto boundary_intercept = ghost_point + (image_point - ghost_point) / 2.0;
+
+    // Find the dimensions needed to grab the required number of points
+    int c_x = std::round(boundary_intercept.x());
+    int c_y = std::round(boundary_intercept.y());
+    const int required_nodes = 10;
+    int selected_nodes = 0;
+    double selection_size = 0.0; //
+    while (selected_nodes < required_nodes)
+    {
+        auto selection = std::pow(3.0 + 2.0 * selection_size, 2.0);
+        int delta_range = std::static_cast<int> selection_size + 1.0;
+        int span = delta_range * 2 + 1;
+
+
+    }
+
+}
