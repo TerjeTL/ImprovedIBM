@@ -31,12 +31,12 @@ public:
 
 	int GetCellFlag(size_t i, size_t j) const
 	{
-		return grid_flags(i, j);
+		return grid_flags(j, i);
 	}
 	
 	double GetPhi(size_t i, size_t j) const
 	{
-		return phi_matrix(i, j);
+		return phi_matrix(j, i);
 	}
 
 	Eigen::Vector2d GetImagePoint(size_t i, size_t j) const
@@ -45,11 +45,11 @@ public:
 	}
 	double GetImagePointPhi(size_t i, size_t j) const
 	{
-		return phi_image_point_matrix(i, j);
+		return phi_image_point_matrix(j, i);
 	}
 	double GetBoundaryPhi(size_t i, size_t j) const
 	{
-		return boundary_phi(i, j);
+		return boundary_phi(j, i);
 	}
 
 	std::pair<int, int> GetMeshSize() const
@@ -90,7 +90,7 @@ public:
 
 	BoundaryCondition GetBoundaryCondition(size_t i, size_t j) const
 	{
-		return immersed_boundaries.at(ghost_point_parent_sdf(i, j))->GetBoundaryCondition();
+		return immersed_boundaries.at(ghost_point_parent_sdf(j, i))->GetBoundaryCondition();
 	}
 
 	Eigen::MatrixXd& GetPhiMatrixRef()
@@ -126,8 +126,8 @@ private:
 	// Grid flags
 	//##############################################################
 	// Describe whether a cell is active, inactive or a ghost point
-	// inactive:	0
-	// active:		1
+	// active:		0
+	// inactive:	1
 	// ghost point:	2
 	Eigen::MatrixXi grid_flags;
 
@@ -138,7 +138,6 @@ private:
 	Eigen::MatrixXd phi_image_point_matrix;
 	Eigen::MatrixXd boundary_phi;
 	Eigen::MatrixX<size_t> ghost_point_parent_sdf;
-
 
 	// Debugging-oriented variables
 	std::map<std::pair<int, int>, std::array<Eigen::Vector2d, 4>> bilinear_interp_selection;

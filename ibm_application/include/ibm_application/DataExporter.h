@@ -74,13 +74,13 @@ public:
 
 			// make a copy for now and store only active nodes
 			auto mat = solution.m_mesh_grid->GetPhiMatrix();
-			for (size_t i = 0; i < mat.rows(); i++)
+			for (size_t j = 0; j < mat.rows(); j++)
 			{
-				for (size_t j = 0; j < mat.cols(); j++)
+				for (size_t i = 0; i < mat.cols(); i++)
 				{
 					if (solution.m_mesh_grid->GetCellFlag(i, j) != 0)
 					{
-						mat(i, j) = 0;
+						mat(j, i) = 0;
 					}
 				}
 			}
@@ -112,13 +112,13 @@ public:
 		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + time_dir + "/" + std::to_string(solution.m_time);
 		// make a copy for now and store only active nodes
 		auto mat = solution.m_mesh_grid->GetPhiMatrix();
-		for (size_t i = 0; i < mat.rows(); i++)
+		for (size_t j = 0; j < mat.rows(); j++)
 		{
-			for (size_t j = 0; j < mat.cols(); j++)
+			for (size_t i = 0; i < mat.cols(); i++)
 			{
 				if (solution.m_mesh_grid->GetCellFlag(i, j) != 0)
 				{
-					mat(i, j) = 0;
+					mat(j, i) = 0;
 				}
 			}
 		}
@@ -150,13 +150,13 @@ public:
 		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/steady_state/solution";
 		
 		auto mat = solution.m_mesh_grid->GetPhiMatrix();
-		for (size_t i = 0; i < mat.rows(); i++)
+		for (size_t j = 0; j < mat.rows(); j++)
 		{
-			for (size_t j = 0; j < mat.cols(); j++)
+			for (size_t i = 0; i < mat.cols(); i++)
 			{
 				if (solution.m_mesh_grid->GetCellFlag(i, j) != 0)
 				{
-					mat(i, j) = 0;
+					mat(j, i) = 0;
 				}
 			}
 		}
@@ -172,9 +172,9 @@ public:
 		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/steady_state/boundary_values";
 		
 		Eigen::MatrixXd boundary_phi = Eigen::MatrixXd::Zero(mat.rows(), mat.cols());
-		for (size_t i = 0; i < mat.rows(); i++)
+		for (size_t j = 0; j < mat.rows(); j++)
 		{
-			for (size_t j = 0; j < mat.cols(); j++)
+			for (size_t i = 0; i < mat.cols(); i++)
 			{
 				
 				if (solution.m_mesh_grid->GetCellFlag(i, j) == 2)
@@ -186,19 +186,19 @@ public:
 
 					if (east == 0)
 					{
-						boundary_phi(i + 1, j) = mat(i + 1, j);
+						boundary_phi(j, i + 1) = mat(j, i + 1);
 					}
 					if (west == 0)
 					{
-						boundary_phi(i - 1, j) = mat(i - 1, j);
+						boundary_phi(j, i - 1) = mat(j, i - 1);
 					}
 					if (north == 0)
 					{
-						boundary_phi(i, j + 1) = mat(i, j + 1);
+						boundary_phi(j + 1, i) = mat(j + 1, i);
 					}
 					if (south == 0)
 					{
-						boundary_phi(i, j - 1) = mat(i, j - 1);
+						boundary_phi(j - 1, i) = mat(j - 1, i);
 					}
 				}
 			}

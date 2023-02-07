@@ -3,6 +3,8 @@
 
 #include "ibm_application/CartGrid.h"
 
+#include <Eigen/Dense>
+
 #include <iostream>
 #include <assert.h>
 
@@ -20,8 +22,8 @@ void CartGrid::UpdateGrid()
         // For each boundary (given that the boundary data exists) we update the grid flags
         if (sdf)
         {
-            for (size_t i = 0UL; i < grid_flags.rows(); ++i) {
-                for (size_t j = 0UL; j < grid_flags.cols(); ++j) {
+            for (size_t j = 0UL; j < grid_flags.rows(); ++j) {
+                for (size_t i = 0UL; i < grid_flags.cols(); ++i) {
 
                     auto x = static_cast<double>(i) * h;
                     auto y = static_cast<double>(j) * h;
@@ -34,8 +36,8 @@ void CartGrid::UpdateGrid()
                             || sdf->SignedDistanceFunction(x, y - h) >= 0.0) {
                             
                             // Set location descriptors
-                            grid_flags(i, j) = 2;
-                            ghost_point_parent_sdf(i, j) = hash;
+                            grid_flags(j, i) = 2;
+                            ghost_point_parent_sdf(j, i) = hash;
 
                             // Calculate normal and assign respective image-point (they are not cleared!)
                             auto normal = sdf->GetNormal(x, y);
@@ -47,13 +49,13 @@ void CartGrid::UpdateGrid()
                             // Regenerate coefficients for bilinear interpolation
                             UpdateInterpolationCoeffs(i, j);
 
-                            phi_image_point_matrix(i,j) = BilinearInterpolation(i, j);
-                            boundary_phi(i, j) = sdf->GetBoundaryPhi();
+                            phi_image_point_matrix(j, i) = BilinearInterpolation(i, j);
+                            boundary_phi(j, i) = sdf->GetBoundaryPhi();
                         }
                         else
                         {
                             // Set cell as inactive (solid)
-                            grid_flags(i, j) = 1;
+                            grid_flags(j, i) = 1;
                         }
                     }
                 }
@@ -68,11 +70,11 @@ void CartGrid::InitializeField()
 {
     assert(immersed_boundaries.size() == 2 && "Can only do custom field initialization with exactly two immersed boundaries");
 
-    for (size_t i = 0UL; i < grid_flags.rows(); ++i) {
-        for (size_t j = 0UL; j < grid_flags.cols(); ++j) {
+    for (size_t j = 0UL; j < grid_flags.rows(); ++j) {
+        for (size_t i = 0UL; i < grid_flags.cols(); ++i) {
 
             // Skip inactive cells 
-            if (grid_flags(i, j) != 0)
+            if (grid_flags(j, i) != 0)
             {
                 continue;
             }
@@ -107,7 +109,7 @@ void CartGrid::InitializeField()
             }
 
             // Linearly interpolate phi between boundaries
-            phi_matrix(i,j) = dist_1 / std::abs(dist_1 + dist_2) * (phi_2 - phi_1) + phi_1;
+            phi_matrix(j,i) = dist_1 / std::abs(dist_1 + dist_2) * (phi_2 - phi_1) + phi_1;
         }
     }
 }
@@ -118,7 +120,7 @@ void CartGrid::UpdateInterpolationCoeffs(size_t i, size_t j)
     // Interpolation in grid-space
     Eigen::Vector2d world_coordinate = image_points.at({ i, j });
     Eigen::Vector2d grid_coordinate = GetGridCoordinate(image_points.at({ i, j }));
-    size_t parent_sdf = ghost_point_parent_sdf(i, j);
+    size_t parent_sdf = ghost_point_parent_sdf(j, i);
     BoundaryCondition boundary = immersed_boundaries.at(parent_sdf)->GetBoundaryCondition();
 
     std::array<Eigen::Vector2i, 4> node_indices;
@@ -141,7 +143,7 @@ void CartGrid::UpdateInterpolationCoeffs(size_t i, size_t j)
     {
         Eigen::Vector4d vandermonde_row;
 
-        if (grid_flags(node_indices[p](0), node_indices[p](1)) == 2)
+        if (grid_flags(node_indices[p](1), node_indices[p](0)) == 2)
         {
             auto image_pt_loc = GetGridCoordinate(GetImagePoint(node_indices[p](0), node_indices[p](1)));
 
@@ -153,12 +155,12 @@ void CartGrid::UpdateInterpolationCoeffs(size_t i, size_t j)
 
             if (boundary == BoundaryCondition::Dirichlet)
             {
-                node_phi(p) = boundary_phi(node_indices[p](0), node_indices[p](1));
+                node_phi(p) = boundary_phi(node_indices[p](1), node_indices[p](0));
                 vandermonde_row = { 1, node_locations[p](0), node_locations[p](1), node_locations[p](0) * node_locations[p](1) };
             }
             else // Neumann
             {
-                node_phi(p) = boundary_phi(node_indices[p](0), node_indices[p](1));
+                node_phi(p) = boundary_phi(node_indices[p](1), node_indices[p](0));
                 vandermonde_row = { 0, grid_normal.x(), grid_normal.y(), node_locations[p](0) * grid_normal.y() + node_locations[p](1) * grid_normal.x() };
             }
         }
@@ -183,7 +185,7 @@ double CartGrid::BilinearInterpolation(size_t i, size_t j)
     // Interpolation in grid-space
     // Eigen::Vector2d world_coordinate = image_points.at({ i, j });
     Eigen::Vector2d grid_coordinate = GetGridCoordinate(image_points.at({i, j}));
-    size_t parent_sdf = ghost_point_parent_sdf(i, j);
+    size_t parent_sdf = ghost_point_parent_sdf(j, i);
     BoundaryCondition boundary = immersed_boundaries.at(parent_sdf)->GetBoundaryCondition();
 
     std::array<Eigen::Vector2i, 4> node_indices;
@@ -196,21 +198,21 @@ double CartGrid::BilinearInterpolation(size_t i, size_t j)
 
     for (size_t p = 0; p < node_indices.size(); p++)
     {
-        if (grid_flags(node_indices[p](0), node_indices[p](1)) == 2)
+        if (grid_flags(node_indices[p](1), node_indices[p](0)) == 2)
         {
             auto image_pt_loc = GetGridCoordinate(GetImagePoint(node_indices[p](0), node_indices[p](1)));
             if (boundary == BoundaryCondition::Dirichlet)
             {
-                node_phi(p) = boundary_phi(node_indices[p](0), node_indices[p](1));
+                node_phi(p) = boundary_phi(node_indices[p](1), node_indices[p](0));
             }
             else
             {
-                node_phi(p) = boundary_phi(node_indices[p](0), node_indices[p](1));
+                node_phi(p) = boundary_phi(node_indices[p](1), node_indices[p](0));
             }
         }
         else
         {
-            node_phi(p) = phi_matrix(node_indices[p](0), node_indices[p](1));
+            node_phi(p) = phi_matrix(node_indices[p](1), node_indices[p](0));
         }
     }
 
@@ -233,18 +235,57 @@ void CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
     auto boundary_intercept = ghost_point + (image_point - ghost_point) / 2.0;
 
     // Find the dimensions needed to grab the required number of points
-    int c_x = std::round(boundary_intercept.x());
-    int c_y = std::round(boundary_intercept.y());
+    int c_x = ghost_point.x();
+    int c_y = ghost_point.y();
     const int required_nodes = 10;
+    Eigen::MatrixXi selection;
     int selected_nodes = 0;
-    double selection_size = 0.0; //
+    int selection_size = 0;
+    int x_corner = 0;
+    int y_corner = 0;
+    //std::cout << image_point << "\n\n";
+    //std::cout << ghost_point << "\n\n";
+    //std::cout << boundary_intercept << "\n\n";
+
     while (selected_nodes < required_nodes)
     {
-        auto selection = std::pow(3.0 + 2.0 * selection_size, 2.0);
-        int delta_range = std::static_cast<int> selection_size + 1.0;
+        // Define the size of the search area
+        auto size = std::round(std::pow(3.0 + 2.0 * selection_size, 2.0));
+        int delta_range = selection_size + 1;
         int span = delta_range * 2 + 1;
 
+        x_corner = std::clamp(c_x - delta_range, 0, (int)grid_flags.cols() - span - 1 );
+        y_corner = std::clamp(c_y - delta_range, 0, (int)grid_flags.rows() - span - 1 );
 
+        // Get the subselection of nodes and check number of fluid points
+        selection = grid_flags.block(x_corner, y_corner, span, span);
+        //std::cout << selection << "\n\n";
+        selected_nodes = (selection.array() == 0).count();
+
+        selection_size++;
     }
 
+    // construct vandermonde matrix, starting with GP as first row
+    Eigen::MatrixXd vandermonde = Eigen::MatrixXd::Zero(selected_nodes + 1, 4);
+    
+    vandermonde.row(0) = Eigen::Vector4d{ 1.0, GetWorldCoordinate(ghost_point).x(), GetWorldCoordinate(ghost_point).y(), GetWorldCoordinate(ghost_point).x() * GetWorldCoordinate(ghost_point).y() };
+
+    // need to get x's and y's relative to the boundary intercept for each selected fluid node
+    int idx = 1;
+    for (size_t i = 0; i < selection.rows(); i++)
+    {
+        for (size_t j = 0; j < selection.cols(); j++)
+        {
+            if (selection(i, j) == 0)
+            {
+                // omg need to check i have used indices correcly everywhere
+
+                auto node_loc = GetWorldCoordinate(Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) });
+                vandermonde.row(idx) = Eigen::Vector4d{ 1.0, node_loc.x(), node_loc.y(), node_loc.x() * node_loc.y() };
+
+                idx++;
+            }
+        }
+    }
+        
 }
