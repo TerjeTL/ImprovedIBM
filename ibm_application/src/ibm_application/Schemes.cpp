@@ -28,7 +28,7 @@ void FTCS_Scheme::BoundaryCondition()
 			ip_ref(j, i) = m_mesh_grid->BilinearInterpolation(i, j);
 
 			// Test the WLSQ function
-			//m_mesh_grid->WeightedLeastSquaresMethod(i, j);
+			double wlsq = m_mesh_grid->WeightedLeastSquaresMethod(i, j);
 
 			auto image_pt_loc_wrld = m_mesh_grid->GetImagePoint(i, j);
 			auto image_pt_loc_grid = m_mesh_grid->GetGridCoordinate(image_pt_loc_wrld);
@@ -44,7 +44,9 @@ void FTCS_Scheme::BoundaryCondition()
 			case BoundaryCondition::Dirichlet:
 			{
 				// GP = IP + (BI - IP)*len_factor
-				phi(j, i) = ip_ref(j, i) + (m_mesh_grid->GetBoundaryPhi(i, j) - ip_ref(j, i)) * m_mesh_grid->m_ip_stencil_length_factor;
+				//phi(j, i) = ip_ref(j, i) + (m_mesh_grid->GetBoundaryPhi(i, j) - ip_ref(j, i)) * m_mesh_grid->m_ip_stencil_length_factor;
+				phi(j, i) = wlsq;
+
 				break;
 			}
 			case BoundaryCondition::Neumann:

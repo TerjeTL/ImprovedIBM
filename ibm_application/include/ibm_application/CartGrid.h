@@ -81,7 +81,7 @@ public:
 
 	double BilinearInterpolation(size_t i, size_t j);
 
-	void WeightedLeastSquaresMethod(size_t i, size_t j);
+	double WeightedLeastSquaresMethod(size_t i, size_t j);
 
 	const Eigen::MatrixXd& GetPhiMatrix() const
 	{

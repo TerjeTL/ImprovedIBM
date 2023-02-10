@@ -167,7 +167,7 @@ void CartGrid::UpdateInterpolationCoeffs(size_t i, size_t j)
         else
         {
             node_locations[p] = node_indices[p].cast<double>();
-            node_phi(p) = phi_matrix(node_indices[p](0), node_indices[p](1));
+            node_phi(p) = phi_matrix(node_indices[p](1), node_indices[p](0));
             vandermonde_row = { 1, node_locations[p](0), node_locations[p](1), node_locations[p](0) * node_locations[p](1) };
         }
 
@@ -222,9 +222,15 @@ double CartGrid::BilinearInterpolation(size_t i, size_t j)
     return phi;
 }
 
-// Implementing WLSQ method
 
-void CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
+double WeightingFunc(double x_n, double y_n, double a_d)
+{
+    double d_n = std::sqrt(std::pow(x_n, 2.0) + std::pow(y_n, 2.0));
+    return std::exp(-std::pow(d_n, 2.0)/a_d);
+}
+
+// Implementing WLSQ method
+double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
 {
     // get the selection of nodes
     
@@ -233,11 +239,12 @@ void CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
     Eigen::Vector2d ghost_point = { static_cast<double>(i), static_cast<double>(j) };
 
     auto boundary_intercept = ghost_point + (image_point - ghost_point) / 2.0;
+    auto ghost_pt_rel = ghost_point - boundary_intercept;
 
     // Find the dimensions needed to grab the required number of points
     int c_x = ghost_point.x();
     int c_y = ghost_point.y();
-    const int required_nodes = 10;
+    const int required_nodes = 25;
     Eigen::MatrixXi selection;
     int selected_nodes = 0;
     int selection_size = 0;
@@ -258,34 +265,119 @@ void CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
         y_corner = std::clamp(c_y - delta_range, 0, (int)grid_flags.rows() - span - 1 );
 
         // Get the subselection of nodes and check number of fluid points
-        selection = grid_flags.block(x_corner, y_corner, span, span);
+        selection = grid_flags.block(y_corner, x_corner, span, span);
         //std::cout << selection << "\n\n";
         selected_nodes = (selection.array() == 0).count();
 
         selection_size++;
     }
 
-    // construct vandermonde matrix, starting with GP as first row
+    //std::cout << "SELECTION\n" << selection << "\n\n";
+
+    // construct vandermonde matrix, starting with BI as first row, GP as second row
     Eigen::MatrixXd vandermonde = Eigen::MatrixXd::Zero(selected_nodes + 1, 4);
     
-    vandermonde.row(0) = Eigen::Vector4d{ 1.0, GetWorldCoordinate(ghost_point).x(), GetWorldCoordinate(ghost_point).y(), GetWorldCoordinate(ghost_point).x() * GetWorldCoordinate(ghost_point).y() };
+    vandermonde.row(0) = Eigen::Vector4d{ 1.0, 0.0, 0.0, 0.0 };
+    //vandermonde.row(1) = Eigen::Vector4d{ 1.0, GetWorldCoordinate(ghost_pt_rel).x(), GetWorldCoordinate(ghost_pt_rel).y(), GetWorldCoordinate(ghost_pt_rel).x() * GetWorldCoordinate(ghost_pt_rel).y() };
 
     // need to get x's and y's relative to the boundary intercept for each selected fluid node
     int idx = 1;
-    for (size_t i = 0; i < selection.rows(); i++)
+    for (size_t i = 0; i < selection.cols(); i++)
     {
-        for (size_t j = 0; j < selection.cols(); j++)
+        for (size_t j = 0; j < selection.rows(); j++)
         {
-            if (selection(i, j) == 0)
+            if (selection(j, i) == 0)
             {
-                // omg need to check i have used indices correcly everywhere
 
-                auto node_loc = GetWorldCoordinate(Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) });
+                auto node_loc = (Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) } - boundary_intercept);
                 vandermonde.row(idx) = Eigen::Vector4d{ 1.0, node_loc.x(), node_loc.y(), node_loc.x() * node_loc.y() };
 
                 idx++;
             }
         }
     }
-        
+
+    //std::cout << "VANDERMONDE\n" << vandermonde << "\n\n";
+
+    // Construct weighting matrix
+    Eigen::VectorXd weighting_coeffs(selected_nodes + 1);
+
+    double a_d = 0.0; // std::pow(GetWorldCoordinate(ghost_pt_rel).x(), 2.0) + std::pow(GetWorldCoordinate(ghost_pt_rel).y(), 2.0);
+    for (size_t i = 0; i < selection.cols(); i++)
+    {
+        for (size_t j = 0; j < selection.rows(); j++)
+        {
+            if (selection(j, i) == 0)
+            {
+                auto node_loc = (Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) } - boundary_intercept);
+                a_d += std::pow(node_loc.x(), 2.0) + std::pow(node_loc.y(), 2.0);
+            }
+        }
+    }
+
+    weighting_coeffs[0] = 1.0;
+    //weighting_coeffs[1] = WeightingFunc(ghost_pt_rel.x(), ghost_pt_rel.y(), a_d);
+
+    int n = 1;
+    for (size_t i = 0; i < selection.cols(); i++)
+    {
+        for (size_t j = 0; j < selection.rows(); j++)
+        {
+            if (selection(j, i) == 0)
+            {
+                auto node_loc = (Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) } - boundary_intercept);
+                weighting_coeffs[n] = WeightingFunc(node_loc.x(), node_loc.y(), a_d);
+
+                n++;
+            }
+        }
+    }
+    
+    Eigen::MatrixXd weighting_matrix = weighting_coeffs.asDiagonal();
+    //std::cout << "WEIGHTING MATRIX\n" << weighting_matrix << "\n\n";
+
+    // construct phi vector
+    Eigen::VectorXd phi_vec(selected_nodes + 1);
+
+    size_t parent_sdf = ghost_point_parent_sdf(j, i);
+    BoundaryCondition boundary = immersed_boundaries.at(parent_sdf)->GetBoundaryCondition();
+    phi_vec[0] = immersed_boundaries.at(parent_sdf)->GetBoundaryPhi();
+    //phi_vec[1] = phi_matrix(j, i);
+
+    n = 1;
+    for (size_t i = 0; i < selection.cols(); i++)
+    {
+        for (size_t j = 0; j < selection.rows(); j++)
+        {
+            if (selection(j, i) == 0)
+            {
+                phi_vec[n] = phi_matrix(y_corner + j, x_corner + i);
+                n++;
+            }
+        }
+    }
+
+    //std::cout << "PHI VECTOR\n" << phi_vec << "\n\n";
+
+    // solve system Ax = b
+
+    // A = V^T W V
+    auto A = vandermonde.transpose() * (weighting_matrix) * vandermonde;
+    //std::cout << "A\n" << A << "\n\n";
+
+    // b = V^T W Phi
+    auto b = vandermonde.transpose() * (weighting_matrix) * phi_vec;
+    //std::cout << "b\n" << b << "\n\n";
+
+    Eigen::Vector4d C = A.colPivHouseholderQr().solve(b);
+    // SVD: Eigen::Vector4d C = (weighting_matrix * vandermonde).template bdcSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(weighting_matrix * phi_vec);
+    //std::cout << "C\n" << C << "\n\n";
+
+    Eigen::Vector4d gp_vec{ 1.0, ghost_pt_rel.x(), ghost_pt_rel.y(), ghost_pt_rel.x() * ghost_pt_rel.y() };
+    //std::cout << "GP VECTOR\n" << gp_vec << "\n\n";
+
+    auto res = C.dot(gp_vec);
+    //std::cout << "GP RECONSTRUCTION\n" << res << "\n\n";
+
+    return res;
 }

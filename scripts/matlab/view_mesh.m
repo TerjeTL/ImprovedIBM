@@ -23,8 +23,8 @@ bc_outer = h5read(FILE, "/geometry/outer/bc");
 
 %% Get Steady State Solution
 
-mesh_0 = load_steady_state_solution(FILE, "mesh_0", nan);
-mesh_1 = load_steady_state_solution(FILE, "mesh_1", nan);
+mesh_0 = load_steady_state_solution(FILE, "mesh_1", nan);
+mesh_1 = load_steady_state_solution(FILE, "mesh_2", nan);
 %mesh_1 = mesh_1(1:8:end, 1:8:end);
 
 r_1 = richardson_extrapolation(mesh_0, mesh_1);
@@ -34,8 +34,8 @@ analytical_mesh_0 = analytical_mesh(mesh_0, A, B, r_inner, r_outer, nan);
 analytical_mesh_1 = analytical_mesh(mesh_1, A, B, r_inner, r_outer, nan);
 
 %% Error Meshes
-error_0 = abs(mesh_0 - analytical_mesh_0);
-error_1 = abs(mesh_1 - analytical_mesh_1);
+error_0 = mesh_0 - analytical_mesh_0;
+error_1 = mesh_1 - analytical_mesh_1;
 error_r = abs(r_1 - analytical_mesh_1);
 
 %% Plots
@@ -47,23 +47,23 @@ analytical_plot_0 = plot_mesh_surface(analytical_mesh_0);
 zlim([0 2]);
 
 nexttile
-plot_0 = plot_mesh_surface(mesh_1(1:2:end, 1:2:end));
+plot_0 = plot_mesh_surface(mesh_0);
 zlim([0 2]);
 
 nexttile
-error_plot_0 = plot_mesh_surface(error_1(1:2:end, 1:2:end));
+error_plot_0 = plot_mesh_surface(error_0);
 
 % level 1
 nexttile
-analytical_plot_1 = plot_mesh_surface(analytical_mesh_0);
+analytical_plot_1 = plot_mesh_surface(analytical_mesh_1);
 zlim([0 2]);
 
 nexttile
-plot_1 = plot_mesh_surface(r_1);
+plot_1 = plot_mesh_surface(mesh_1);
 zlim([0 2]);
 
 nexttile
-error_plot_1 = plot_mesh_surface(error_r(2:2:end,2:2:end));
+error_plot_1 = plot_mesh_surface(error_1);
 %zlim([0 0.45]);
 
 set(gcf,'position',[get(0, 'Screensize')])

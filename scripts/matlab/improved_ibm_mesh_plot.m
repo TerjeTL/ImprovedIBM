@@ -2,7 +2,8 @@ clc; clear; close all;
 addpath('./functions/');
 
 %FILE = "../seven_levels_ss.h5";
-FILE = "../export_data_high_res.h5";
+%FILE = "../export_data_high_res.h5";
+FILE = "../export_data.h5";
 
 %% Get Geometric Params
 % radius, x, y, bc_phi
@@ -22,8 +23,8 @@ bc_outer = h5read(FILE, "/geometry/outer/bc");
 
 %% Get Steady State Solution
 
-mesh_0 = load_steady_state_solution(FILE, "mesh_2", nan);
-mesh_1 = load_steady_state_solution(FILE, "mesh_3", nan);
+mesh_0 = load_steady_state_solution(FILE, "mesh_1", nan);
+mesh_1 = load_steady_state_solution(FILE, "mesh_2", nan);
 %mesh_1 = mesh_1(1:8:end, 1:8:end);
 
 r_0 = richardson_extrapolation(mesh_0, mesh_1);
