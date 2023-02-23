@@ -172,9 +172,9 @@ public:
 		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/steady_state/boundary_values";
 		
 		Eigen::MatrixXd boundary_phi = Eigen::MatrixXd::Zero(mat.rows(), mat.cols());
-		for (size_t j = 0; j < mat.rows(); j++)
+		for (size_t j = 1; j < mat.rows()-1; j++)
 		{
-			for (size_t i = 0; i < mat.cols(); i++)
+			for (size_t i = 1; i < mat.cols()-1; i++)
 			{
 				
 				if (solution.m_mesh_grid->GetCellFlag(i, j) == 2)

@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 
 //#include "ibm_application/SDLGraphics.h"
-#include "SDL.h"
+//#include "SDL.h"
 
 class SDLGraphics;
 
@@ -25,7 +25,7 @@ public:
 		m_boundary_condition = boundary_condition;
 	}
 	virtual double SignedDistanceFunction(double sample_x, double sample_y) const { return 0.0; };
-	virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) {};
+	//virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) {};
 
 	Eigen::Vector2d GetPosition()
 	{
@@ -57,7 +57,7 @@ public:
 
 
 	virtual double SignedDistanceFunction(double sample_x, double sample_y) const override;
-	virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) override;
+	//virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) override;
 
 	Eigen::Vector2d GetNormal(double sample_x, double sample_y) override;
 
