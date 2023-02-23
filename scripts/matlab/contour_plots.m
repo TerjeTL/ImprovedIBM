@@ -2,7 +2,8 @@ clc; clear; close all;
 addpath('./functions/');
 
 %FILE = "../seven_levels_ss.h5";
-FILE = "../export_data_high_res.h5";
+%FILE = "../export_data_high_res.h5";
+FILE = "../export_data.h5";
 
 %% Get Geometric Params
 % radius, x, y, bc_phi
@@ -23,7 +24,7 @@ bc_outer = h5read(FILE, "/geometry/outer/bc");
 %% Plots
 tiledlayout(2,3)
 
-plot_level(FILE, "mesh_6", "mesh_7", A, B, r_inner, r_outer);
+plot_level(FILE, "mesh_2", "mesh_3", A, B, r_inner, r_outer);
 set(gcf,'position', [0,0,1700,1000])
 saveas(gcf,'contour_plots_level_3','svg')
 
@@ -61,7 +62,7 @@ function plot_level(FILE, coarse_mesh_str, fine_mesh_str, A, B, r_inner, r_outer
     ax.FontSize = 24;
 
     nexttile
-    plot_0 = plot_contours(error_1(1:2:end, 1:2:end));
+    plot_0 = plot_contours(error_1);
     colorbar
     %zlim([0 2]);
     ax = gca;

@@ -2,7 +2,8 @@ clc; clear; close all;
 addpath('./functions/');
 
 %FILE = "../seven_levels_ss.h5";
-FILE = "../export_data_high_res.h5";
+%FILE = "../export_data_high_res.h5";
+FILE = "../export_data.h5";
 
 %% Get Geometric Params
 % radius, x, y, bc_phi
