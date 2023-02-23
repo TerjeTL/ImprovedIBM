@@ -13,7 +13,8 @@ public:
 
 	void RunDataViewer();
 
-	std::shared_ptr<CartGrid> grid = nullptr;
+
+	std::vector<std::shared_ptr<CartGrid>> grids;
 private:
 	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 	SDL_Window* window;
