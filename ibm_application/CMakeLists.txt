@@ -18,6 +18,7 @@ target_sources(ibm_application PRIVATE
 	"src/ibm_application/DataExporter.cpp"
 	"src/data_viewer/Shader.cpp"
 	"src/data_viewer/Camera.cpp"
+	"src/data_viewer/MatrixObject.cpp"
 )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)

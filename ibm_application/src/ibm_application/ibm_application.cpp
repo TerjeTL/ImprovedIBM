@@ -7,6 +7,7 @@
 
 #include "ibm_application/ibm_application.h"
 #include "ibm_application/DataViewer.h"
+#include "data_viewer/MatrixObject.h"
 #include "ibm_application/CartGrid.h"
 #include "ibm_application/Solver.h"
 #include "ibm_application/DataExporter.h"
@@ -87,11 +88,13 @@ int main(int argc, char* argv[])
         {
             // Prepare an SDLGraphics instance
             DataViewer data_viewer;
-            data_viewer.grids.push_back(grid_0);
-            data_viewer.grids.push_back(grid_1);
 
             // Launch our SDLGraphics program
             data_viewer.DataViewerInitialize();
+
+            data_viewer.grids.push_back(MatrixData(grid_0->GetMeshSize(), MatrixObject{ EigenMatrixToArray(grid_0->GetGridFlags()) }));
+            //data_viewer.grids.push_back(MatrixData(grid_1->GetMeshSize(), MatrixObject{ EigenMatrixToArray(grid_1->GetGridFlags()) }));
+
             data_viewer.RunDataViewer();
             break;
         }

@@ -3,6 +3,7 @@
 #include "ibm_application/DataViewer.h"
 #include "data_viewer/Shader.h"
 #include "data_viewer/Camera.h"
+#include "data_viewer/MatrixObject.h"
 
 #include "glad/glad.h"
 #include "imgui.h"
@@ -17,191 +18,6 @@
 
 #include "Eigen/Eigen"
 
-template<typename T>
-std::vector<T> EigenMatrixToArray(const Eigen::MatrixX<T>& eigen_mat)
-{
-    std::vector<T> mat_vector(eigen_mat.rows()*eigen_mat.cols());
-
-    typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMajMat;
-    RowMajMat::Map(mat_vector.data(), eigen_mat.rows(), eigen_mat.cols()) = eigen_mat;
-
-    return mat_vector;
-}
-
-class MatrixModel {
-    unsigned int texture1, texture2, outTexture;
-    unsigned int VBO, VAO, EBO;
-    static constexpr float vertices[] = {
-        //pos                //texcoords
-         0.5f,  0.5f, 0.0f,  1.0f, 1.0f, //tr
-         0.5f, -0.5f, 0.0f,  1.0f, 0.0f, //br
-        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, //bl
-        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f  //tl
-    };
-    static constexpr unsigned int indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
-    };
-
-    glm::mat4 MVP;
-    glm::vec3 color;
-
-    Eigen::Matrix4f test_tex = (Eigen::Matrix4f() <<
-        0.0f, 0.05f, 0.1f, 0.15f,
-        0.2f, 0.25f, 0.3f, 0.35f,
-        0.4f, 0.45f, 0.5f, 0.55f,
-        0.6f, 0.65f, 0.7f, 1.0f ).finished();
-
-    Shader shaders{ "D:/Development/C++/ibm_application/ibm_application/src/shaders/MatrixViewer.vert",
-	"D:/Development/C++/ibm_application/ibm_application/src/shaders/MatrixViewer.frag" };
-public:
-    unsigned int framebuffer, textureColorbuffer;
-    std::vector<int> grid_flag_mat;
-    uint32_t size = 0;
-
-    MatrixModel(std::vector<int> grid_flags) : grid_flag_mat(grid_flags)
-	{
-        color = glm::vec3(1, 0, 0);
-        MVP = glm::mat4(1.0f);
-
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-        glGenBuffers(1, &EBO);
-
-        glBindVertexArray(VAO);
-
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-        // position attribute
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        // texture coord attribute
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
-
-        // load and create a texture 
-		// -------------------------
-        // texture 1 (float)
-        // ---------
-        glGenTextures(1, &texture1);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        // set the texture wrapping parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);	// set texture wrapping to GL_REPEAT (default wrapping method)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-        float borderColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
-        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-        // set texture filtering parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    	//float* data = test_tex.data();
-        auto vec_data = EigenMatrixToArray<float>(test_tex);
-    	float* data = vec_data.data();
-        if (data)
-        {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 4, 4, 0, GL_RED, GL_FLOAT, data);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-        else
-        {
-            std::cout << "Failed to load texture" << std::endl;
-        }
-
-        // load and create a texture 
-        // -------------------------
-        // texture 2 (int)
-        // ---------
-        glGenTextures(1, &texture2);
-        glBindTexture(GL_TEXTURE_2D, texture2);
-        // set the texture wrapping parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);	// set texture wrapping to GL_REPEAT (default wrapping method)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-        // set texture filtering parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-        int* data_2 = grid_flag_mat.data();
-    	size = std::round(std::sqrt(grid_flag_mat.size()));
-        if (data_2)
-        {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_R16I, size, size, 0, GL_RED_INTEGER, GL_INT, data_2);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-        else
-        {
-            std::cout << "Failed to load texture" << std::endl;
-        }
-
-        // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
-        // -------------------------------------------------------------------------------------------
-        shaders.use(); // don't forget to activate/use the shader before setting uniforms!
-        // either set it manually like so:
-        // or set it via the texture class
-        shaders.setFloat("texture1", 0);
-        shaders.setInt("texture2", 1);
-
-        glGenFramebuffers(1, &framebuffer);
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glGenTextures(1, &textureColorbuffer);
-        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 800, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
-
-        // now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-    void SetMVP(glm::mat4 mvp) {
-        MVP = mvp;
-    }
-
-    int setColor(glm::vec3 color_in) {
-        color = color_in;
-        return 1;
-    }
-
-    int draw() {
-
-        glViewport(0, 0, 800, 800);
-    	// bind textures on corresponding texture units
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
-
-        shaders.use();
-        shaders.SetMat4fv("mvp", MVP);
-        shaders.SetVec3fv("color", color);
-        shaders.SetUInt("size", size);
-
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        return 1;
-    }
-
-    ~MatrixModel() {
-
-        glDeleteVertexArrays(1, &VAO);
-        glDeleteBuffers(1, &VBO);
-        glDeleteBuffers(1, &EBO);
-    }
-};
 
 void DataViewer::DataViewerInitialize()
 {
@@ -276,117 +92,9 @@ void DataViewer::DataViewerInitialize()
     //IM_ASSERT(font != NULL);
 }
 
-class Line {
-    int shaderProgram;
-    unsigned int VBO, VAO;
-    std::vector<float> vertices;
-    glm::vec3 startPoint;
-    glm::vec3 endPoint;
-    glm::mat4 MVP;
-    glm::vec3 lineColor;
-public:
-    Line(glm::vec3 start, glm::vec3 end) {
-
-        startPoint = start;
-        endPoint = end;
-        lineColor = glm::vec3(1, 1, 1);
-        MVP = glm::mat4(1.0f);
-
-        const char* vertexShaderSource = "#version 330 core\n"
-            "layout (location = 0) in vec3 aPos;\n"
-            "uniform mat4 MVP;\n"
-            "void main()\n"
-            "{\n"
-            "   gl_Position = MVP * vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-            "}\0";
-        const char* fragmentShaderSource = "#version 330 core\n"
-            "out vec4 FragColor;\n"
-            "uniform vec3 color;\n"
-            "void main()\n"
-            "{\n"
-            "   FragColor = vec4(color, 1.0f);\n"
-            "}\n\0";
-
-        // vertex shader
-        int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-        glCompileShader(vertexShader);
-        // check for shader compile errors
-
-        // fragment shader
-        int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-        glCompileShader(fragmentShader);
-        // check for shader compile errors
-
-        // link shaders
-        shaderProgram = glCreateProgram();
-        glAttachShader(shaderProgram, vertexShader);
-        glAttachShader(shaderProgram, fragmentShader);
-        glLinkProgram(shaderProgram);
-        // check for linking errors
-
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
-
-        vertices = {
-             start.x, start.y, start.z,
-             end.x, end.y, end.z,
-
-        };
-
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-        glBindVertexArray(VAO);
-
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices.data(), GL_STATIC_DRAW);
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-
-    }
-
-    int setMVP(glm::mat4 mvp) {
-        MVP = mvp;
-        return 1;
-    }
-
-    int setColor(glm::vec3 color) {
-        lineColor = color;
-        return 1;
-    }
-
-    int draw() {
-        glUseProgram(shaderProgram);
-        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "MVP"), 1, GL_FALSE, &MVP[0][0]);
-        glUniform3fv(glGetUniformLocation(shaderProgram, "color"), 1, &lineColor[0]);
-
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_LINES, 0, 2);
-        return 1;
-    }
-
-    ~Line() {
-
-        glDeleteVertexArrays(1, &VAO);
-        glDeleteBuffers(1, &VBO);
-        glDeleteProgram(shaderProgram);
-    }
-};
-
-
 void DataViewer::RunDataViewer()
 {
     Camera camera;
-
-    Line line_1{ {0.0, 0.0, 0.0}, {0.5, 0.5, 0.0} };
-    line_1.setColor(glm::vec3{ 1.0, 0.0, 0.0 });
-
-    MatrixModel mat_1(EigenMatrixToArray<int>(grids[0]->GetGridFlags()));
 
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     while (!quit)
@@ -513,14 +221,9 @@ void DataViewer::RunDataViewer()
             std::vector<std::string> mats;
             for (const auto& mat : grids)
             {
-                auto size = mat->GetMeshSize();
-                std::string str = std::to_string(size.first) + "x" + std::to_string(size.second);
-                mats.push_back(str);
-
+                mats.push_back(mat.tag);
             }
 
-
-            static int selected_mat = 0; // you need to store this state somewhere
             // later in your code...
             if (ImGui::BeginCombo("combo", mats[selected_mat].c_str())) {
                 for (int i = 0; i < mats.size(); ++i) {
@@ -547,7 +250,7 @@ void DataViewer::RunDataViewer()
             // Get the size of the child (i.e. the whole draw size of the windows).
             ImVec2 wsize = ImGui::GetWindowSize();
             // Because I use the texture from OpenGL, I need to invert the V from the UV.
-            ImGui::Image((ImTextureID)mat_1.textureColorbuffer, wsize, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image((ImTextureID)grids[selected_mat].matrix_visualization.GetTextureBuffer(), wsize, ImVec2(0, 1), ImVec2(1, 0));
             ImGui::EndChild();
             ImGui::End();
         }
@@ -576,8 +279,8 @@ void DataViewer::RunDataViewer()
 
         // OpenGL stuff
         //line_1.draw();
-        mat_1.SetMVP(camera.GetMVP());
-        mat_1.draw();
+        grids[selected_mat].matrix_visualization.SetMVP(camera.GetMVP());
+        grids[selected_mat].matrix_visualization.DrawToTexture();
 
         // ImGui
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
