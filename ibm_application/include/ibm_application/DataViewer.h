@@ -24,6 +24,8 @@ private:
 	int window_width;
 	int window_height;
 
+	uint16_t selected_mat = 0;
+
 	SDL_bool quit = SDL_FALSE;
 	SDL_bool mouse_active = SDL_FALSE;
 	SDL_bool mouse_hover = SDL_FALSE;

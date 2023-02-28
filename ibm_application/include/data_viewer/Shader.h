@@ -110,7 +110,7 @@ public:
         glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &values[0][0]);
     }
 
-    unsigned int GetProgram() const
+    unsigned int& GetProgram()
     {
         return ID;
     }
