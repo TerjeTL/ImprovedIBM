@@ -6,7 +6,7 @@
 #include <fstream>
 
 #include "ibm_application/ibm_application.h"
-#include "ibm_application/DataViewer.h"
+#include "data_viewer/DataViewer.h"
 #include "ibm_application/CartGrid.h"
 #include "ibm_application/Solver.h"
 #include "ibm_application/DataExporter.h"

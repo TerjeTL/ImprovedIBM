@@ -3,7 +3,7 @@
 
 #include "data_viewer/SolutionModel.h"
 
-#include "CartGrid.h"
+#include "ibm_application/CartGrid.h"
 #include "imgui.h"
 #include "data_viewer/Camera.h"
 

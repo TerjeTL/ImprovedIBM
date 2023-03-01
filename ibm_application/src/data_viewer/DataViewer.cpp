@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ibm_application/DataViewer.h"
+#include "data_viewer/DataViewer.h"
 #include "data_viewer/Shader.h"
 #include "data_viewer/Camera.h"
 #include "data_viewer/SolutionModel.h"

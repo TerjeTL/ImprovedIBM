@@ -9,7 +9,7 @@ find_package(OpenMP REQUIRED)
 add_executable(ibm_application "src/ibm_application/ibm_application.cpp")
 
 target_sources(ibm_application PRIVATE
-	"src/ibm_application/DataViewer.cpp"
+	"src/data_viewer/DataViewer.cpp"
 	"src/ibm_application/GeometrySDF.cpp"
 	"src/ibm_application/CartGrid.cpp"
 	"src/ibm_application/Schemes.cpp"
