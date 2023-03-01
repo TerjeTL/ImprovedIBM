@@ -87,11 +87,19 @@ int main(int argc, char* argv[])
         {
             // Prepare an SDLGraphics instance
             DataViewer data_viewer;
+
             data_viewer.grids.push_back(grid_0);
             data_viewer.grids.push_back(grid_1);
 
             // Launch our SDLGraphics program
             data_viewer.DataViewerInitialize();
+
+            data_viewer.models.emplace_back(SolutionModel{});
+            data_viewer.models.emplace_back(SolutionModel{});
+
+            data_viewer.models[0].AddIntegerDataTexture(grid_0->GetGridFlags());
+            data_viewer.models[1].AddIntegerDataTexture(grid_1->GetGridFlags());
+
             data_viewer.RunDataViewer();
             break;
         }

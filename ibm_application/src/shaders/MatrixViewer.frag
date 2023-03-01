@@ -4,11 +4,7 @@ out vec4 FragColor;
 
 in vec2 TexCoord;
 
-uniform uint size;
-uniform vec3 color;
-
-uniform sampler2D texture1;
-uniform isampler2D texture2;
+uniform isampler2D data_texture1;
 
 const float N = 20.0; // grid ratio
 float gridTextureGradBox( in vec2 p, in vec2 ddx, in vec2 ddy )
@@ -43,12 +39,14 @@ float GridNodes(in vec2 pt, in float n, in float radius)
 
 void main()
 {
-    vec2 coord = TexCoord * size + vec2(0.025, 0.025) - vec2(0.5, 0.5);
+    ivec2 size = textureSize(data_texture1, 0);
+    int width = size.x;
+
+    vec2 coord = TexCoord * width + vec2(0.025, 0.025) - vec2(0.5, 0.5);
     vec3 material = vec3(1.0)*gridTextureGradBox( coord, dFdx(coord), dFdy(coord) );
     
-    float test = texture(texture1, TexCoord).r;
-    int node_flag = texture(texture2, TexCoord).r;
-    float grid_nodes_int = GridNodes(TexCoord, size, 0.05);
+    int node_flag = texture(data_texture1, TexCoord).r;
+    float grid_nodes_int = GridNodes(TexCoord, width, 0.05);
     if (grid_nodes_int > 0.0)
     {
         if (node_flag == 0)

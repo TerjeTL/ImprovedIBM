@@ -1,5 +1,7 @@
 #pragma once
 
+#include <tuple>
+
 #include "ext.hpp"
 
 class Camera
@@ -11,9 +13,9 @@ public:
 		model = glm::scale(model, scale);
 	}
 
-	glm::mat4 GetMVP() const
+	std::tuple<glm::mat4, glm::mat4, glm::mat4> GetMVP() const
 	{
-		return projection * model * view;
+		return { model, view, projection };
 	}
 private:
 	glm::vec3 loc = glm::vec3(0.0f, 0.0f, -1.0f);

@@ -3,6 +3,7 @@
 #include "ibm_application/DataViewer.h"
 #include "data_viewer/Shader.h"
 #include "data_viewer/Camera.h"
+#include "data_viewer/SolutionModel.h"
 
 #include "glad/glad.h"
 #include "imgui.h"
@@ -17,6 +18,8 @@
 
 #include "Eigen/Eigen"
 
+#include "data_viewer/Mesh.h"
+
 void GLAPIENTRY
 MessageCallback(GLenum source,
     GLenum type,
@@ -30,198 +33,6 @@ MessageCallback(GLenum source,
         (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
         type, severity, message);
 }
-
-
-template<typename T>
-std::vector<T> EigenMatrixToArray(const Eigen::MatrixX<T>& eigen_mat)
-{
-    std::vector<T> mat_vector(eigen_mat.rows()*eigen_mat.cols());
-
-    typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMajMat;
-    RowMajMat::Map(mat_vector.data(), eigen_mat.rows(), eigen_mat.cols()) = eigen_mat;
-
-    return mat_vector;
-}
-
-class MatrixModel {
-    unsigned int texture1, texture2, outTexture;
-    unsigned int VBO, VAO, EBO;
-    const float vertices[20] = {
-        //pos                //texcoords
-         0.5f,  0.5f, 0.0f,  1.0f, 1.0f, //tr
-         0.5f, -0.5f, 0.0f,  1.0f, 0.0f, //br
-        -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, //bl
-        -0.5f,  0.5f, 0.0f,  0.0f, 1.0f  //tl
-    };
-    const unsigned int indices[6] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
-    };
-
-    glm::mat4 MVP;
-    glm::vec3 color;
-
-    Eigen::Matrix4f test_tex = (Eigen::Matrix4f() <<
-        0.0f, 0.05f, 0.1f, 0.15f,
-        0.2f, 0.25f, 0.3f, 0.35f,
-        0.4f, 0.45f, 0.5f, 0.55f,
-        0.6f, 0.65f, 0.7f, 1.0f ).finished();
-
-    Shader shaders{ "D:/Development/C++/ibm_application/ibm_application/src/shaders/MatrixViewer.vert",
-	"D:/Development/C++/ibm_application/ibm_application/src/shaders/MatrixViewer.frag" };
-public:
-    unsigned int framebuffer, textureColorbuffer;
-    std::vector<int> grid_flag_mat;
-    uint32_t size = 0;
-
-    MatrixModel(std::vector<int> grid_flags) : grid_flag_mat(grid_flags)
-	{
-        color = glm::vec3(1, 0, 0);
-        MVP = glm::mat4(1.0f);
-
-        glGenVertexArrays(1, &VAO);
-        glGenBuffers(1, &VBO);
-        glGenBuffers(1, &EBO);
-
-        glBindVertexArray(VAO);
-
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
-
-        // position attribute
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        // texture coord attribute
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
-
-        glBindVertexArray(0);
-
-        // load and create a texture 
-		// -------------------------
-        // texture 1 (float)
-        // ---------
-        glGenTextures(1, &texture1);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        // set the texture wrapping parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);	// set texture wrapping to GL_REPEAT (default wrapping method)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-        float borderColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
-        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-        // set texture filtering parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    	//float* data = test_tex.data();
-        auto vec_data = EigenMatrixToArray<float>(test_tex);
-    	float* data = vec_data.data();
-        if (data)
-        {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, 4, 4, 0, GL_RED, GL_FLOAT, data);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-        else
-        {
-            std::cout << "Failed to load texture" << std::endl;
-        }
-
-        // load and create a texture 
-        // -------------------------
-        // texture 2 (int)
-        // ---------
-        glGenTextures(1, &texture2);
-        glBindTexture(GL_TEXTURE_2D, texture2);
-        // set the texture wrapping parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);	// set texture wrapping to GL_REPEAT (default wrapping method)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-        // set texture filtering parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-        int* data_2 = grid_flag_mat.data();
-    	size = std::round(std::sqrt(grid_flag_mat.size()));
-        if (data_2)
-        {
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_R16I, size, size, 0, GL_RED_INTEGER, GL_INT, data_2);
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-        else
-        {
-            std::cout << "Failed to load texture" << std::endl;
-        }
-
-        // tell opengl for each sampler to which texture unit it belongs to (only has to be done once)
-        // -------------------------------------------------------------------------------------------
-        shaders.use(); // don't forget to activate/use the shader before setting uniforms!
-        // either set it manually like so:
-        // or set it via the texture class
-        shaders.setFloat("texture1", 0);
-        shaders.setInt("texture2", 1);
-
-        glGenFramebuffers(1, &framebuffer);
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-        glGenTextures(1, &textureColorbuffer);
-        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 800, 800, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
-
-        // now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-            std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-    void SetMVP(glm::mat4 mvp) {
-        MVP = mvp;
-    }
-
-    int setColor(glm::vec3 color_in) {
-        color = color_in;
-        return 1;
-    }
-
-    int draw() {
-        shaders.use();
-        
-    	// bind textures on corresponding texture units
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glViewport(0, 0, 800, 800);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
-
-        shaders.SetMat4fv("mvp", MVP);
-        shaders.SetVec3fv("color", color);
-        shaders.SetUInt("size", size);
-
-        glBindVertexArray(VAO);
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        glBindVertexArray(0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        return 1;
-    }
-
-    /*~MatrixModel() {
-
-        glDeleteVertexArrays(1, &VAO);
-        glDeleteBuffers(1, &VBO);
-        glDeleteBuffers(1, &EBO);
-    }*/
-};
 
 void DataViewer::DataViewerInitialize()
 {
@@ -302,15 +113,11 @@ void DataViewer::DataViewerInitialize()
 
 void DataViewer::RunDataViewer()
 {
-    Camera camera;
+    ImGuiIO& io = ImGui::GetIO();
 
-    std::vector<MatrixModel> models;
+	//(void)io;
 
-    models.emplace_back(EigenMatrixToArray<int>(grids[0]->GetGridFlags()));
-    models.emplace_back(EigenMatrixToArray<int>(grids[1]->GetGridFlags()));
-
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    while (!quit)
+	while (!quit)
     {
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -466,7 +273,8 @@ void DataViewer::RunDataViewer()
             // Get the size of the child (i.e. the whole draw size of the windows).
             ImVec2 wsize = ImGui::GetWindowSize();
             // Because I use the texture from OpenGL, I need to invert the V from the UV.
-            ImTextureID id = (ImTextureID)models[selected_mat].textureColorbuffer;
+            ImTextureID id = (ImTextureID)models[selected_mat].GetTextureBuffer();
+            //ImTextureID id = (ImTextureID)test_meshes[selected_mat].out_texture_buffer;
             ImGui::Image(id, wsize, ImVec2(0, 1), ImVec2(1, 0));
             ImGui::EndChild();
             ImGui::End();
@@ -495,12 +303,11 @@ void DataViewer::RunDataViewer()
         glClear(GL_COLOR_BUFFER_BIT);
 
         // OpenGL stuff
-        //line_1.draw();
 
         for (auto& model : models)
         {
             model.SetMVP(camera.GetMVP());
-            model.draw();
+            model.DrawSolutionModelToTexture();
         }
 
         // ImGui

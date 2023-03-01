@@ -1,8 +1,11 @@
 //#define SDL_MAIN_HANDLED
 #include <SDL.h>
 
+#include "data_viewer/SolutionModel.h"
+
 #include "CartGrid.h"
 #include "imgui.h"
+#include "data_viewer/Camera.h"
 
 class DataViewer
 {
@@ -13,6 +16,7 @@ public:
 
 	void RunDataViewer();
 
+	std::vector<SolutionModel> models;
 
 	std::vector<std::shared_ptr<CartGrid>> grids;
 private:
@@ -31,6 +35,8 @@ private:
 	SDL_bool mouse_hover = SDL_FALSE;
 
 	// Our state
+	Camera camera;
+
 	bool show_demo_window = true;
 	bool show_another_window = false;
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);

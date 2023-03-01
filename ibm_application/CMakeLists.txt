@@ -9,7 +9,6 @@ find_package(OpenMP REQUIRED)
 add_executable(ibm_application "src/ibm_application/ibm_application.cpp")
 
 target_sources(ibm_application PRIVATE
-#	"src/ibm_application/SDLGraphics.cpp"
 	"src/ibm_application/DataViewer.cpp"
 	"src/ibm_application/GeometrySDF.cpp"
 	"src/ibm_application/CartGrid.cpp"
@@ -18,6 +17,8 @@ target_sources(ibm_application PRIVATE
 	"src/ibm_application/DataExporter.cpp"
 	"src/data_viewer/Shader.cpp"
 	"src/data_viewer/Camera.cpp"
+	"src/data_viewer/Mesh.cpp"
+	"src/data_viewer/SolutionModel.cpp"
 )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)

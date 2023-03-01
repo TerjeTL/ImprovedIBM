@@ -70,10 +70,21 @@ public:
         glDeleteShader(fragment);
     }
 
+    /*Shader(Shader& cpy)
+    {
+
+    }
+
+    Shader& operator=(const Shader& shader)
+    {
+
+        return *this;
+    }
+
     ~Shader()
     {
         glDeleteProgram(ID);
-    }
+    }*/
 
     // activate the shader
     // ------------------------------------------------------------------------
@@ -115,6 +126,8 @@ public:
         return ID;
     }
 private:
+
+
     // utility function for checking shader compilation/linking errors.
     // ------------------------------------------------------------------------
     void checkCompileErrors(unsigned int shader, std::string type)
