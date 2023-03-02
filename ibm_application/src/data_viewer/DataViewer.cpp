@@ -29,9 +29,12 @@ MessageCallback(GLenum source,
     const GLchar* message,
     const void* userParam)
 {
-    fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
-        (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
-        type, severity, message);
+    if (severity == GL_DEBUG_SEVERITY_HIGH)
+	{
+        fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+            (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
+            type, severity, message);
+	}
 }
 
 void DataViewer::DataViewerInitialize()
@@ -132,6 +135,18 @@ void DataViewer::RunDataViewer()
                 quit = SDL_TRUE;
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
                 quit = SDL_TRUE;
+
+            //User presses a key
+            if (event.type == SDL_KEYDOWN)
+            {
+                camera.ProcessKeyboardCommands(event.key.keysym.sym);
+                //Select surfaces based on key press
+                switch (event.key.keysym.sym)
+                {
+                default:
+                    break;
+                }
+            }
         }
 
         // Start the Dear ImGui frame
@@ -238,20 +253,70 @@ void DataViewer::RunDataViewer()
 
         if (ImGui::Begin("LEFT"))
         {
-            std::vector<std::string> mats;
-            for (const auto& mat : grids)
+            if (ImGui::Button("Add Simulation"))
+                ImGui::OpenPopup("Create New Simulation");
+            ImGui::SameLine();
+            if (ImGui::Button("Refine Selected") && !models.empty())
             {
-                auto size = mat->GetMeshSize();
-                std::string str = std::to_string(size.first) + "x" + std::to_string(size.second);
-                mats.push_back(str);
+                size_t size = models[selected_mat].m_size;
+                size = m_solver.AddGridDoubledSolution(*m_solver.GetSolution(size)); // add new solution and get the new size
 
+                if (size != 0)
+                {
+                    SolutionModel view_model{};
+                    view_model.SetSolution(m_solver.GetSolution(size));
+                    view_model.InitData();
+                    models.push_back(view_model);
+                }
+            }
+
+            // Always center this window when appearing
+            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+            if (ImGui::BeginPopupModal("Create New Simulation", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                ImGui::Text("Create new simulation with the following parameters:\n  size:  grid size (n x n)\n    dt:  time step\n\n");
+
+                const double  dt_min = 0., dt_max = 1.0;
+                const unsigned int  size_min = 2, size_max = 1000;
+                static unsigned int size_slider = 2.0;
+            	static double dt_slider = 0.0;
+
+                ImGui::PushItemWidth(120);
+                ImGui::DragScalar("##off", ImGuiDataType_U32, &size_slider, 0.2f, &size_min, &size_max, "size: %u");
+                ImGui::SameLine(140);
+                ImGui::DragScalar("##off2", ImGuiDataType_Double, &dt_slider, 0.0005f, &dt_min, &dt_max, "dt: %.10f");
+                ImGui::PopItemWidth();
+
+                ImGui::NewLine();
+            	ImGui::Separator();
+
+                if (ImGui::Button("OK", ImVec2(120, 0)))
+                {
+                    m_solver.AddSolution(dt_slider, size_slider);
+
+                	SolutionModel view_model{};
+                    view_model.SetSolution(m_solver.GetSolution(size_slider));
+                    view_model.InitData();
+                    models.push_back(view_model);
+
+	                ImGui::CloseCurrentPopup();
+                }
+                ImGui::SetItemDefaultFocus();
+                ImGui::SameLine();
+                if (ImGui::Button("Cancel", ImVec2(120, 0)))
+                {
+	                ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
             }
 
             // later in your code...
-            if (ImGui::BeginCombo("combo", mats[selected_mat].c_str())) {
-                for (int i = 0; i < mats.size(); ++i) {
+            if (ImGui::BeginCombo("combo", models.size() > 0 ? models[selected_mat].size_id.c_str() : "##nothing")) {
+                for (int i = 0; i < models.size(); ++i) {
                     const bool isSelected = (selected_mat == i);
-                    if (ImGui::Selectable(mats[i].c_str(), isSelected)) {
+                    if (ImGui::Selectable(models[i].size_id.c_str(), isSelected)) {
                         selected_mat = i;
                     }
 
@@ -264,19 +329,247 @@ void DataViewer::RunDataViewer()
                 ImGui::EndCombo();
             }
 
+            ImGui::Separator();
+            ImGui::Text("Boundaries");
+
+            if (ImGui::Button("Add Boundary"))
+                ImGui::OpenPopup("Create New Boundary");
+            ImGui::SameLine();
+            if (ImGui::Button("Clear All") && !models.empty())
+            {
+                m_boundaries = {};
+
+                // must clean up more..
+            }
+
+            // Always center this window when appearing
+            center = ImGui::GetMainViewport()->GetCenter();
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+            if (ImGui::BeginPopupModal("Create New Boundary", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                ImGui::SeparatorText("Boundary Type");
+                std::array<std::string, 1> boundary_types{ "Circle" };
+                static int boundary_type_selector = 0;
+
+                if (ImGui::BeginCombo("Type", boundary_types[boundary_type_selector].c_str())) {
+                    for (int i = 0; i < boundary_types.size(); ++i) {
+                        const bool isSelected = (boundary_type_selector == i);
+                        if (ImGui::Selectable(boundary_types[i].c_str(), isSelected)) {
+                            boundary_type_selector = i;
+                        }
+
+                        // Set the initial focus when opening the combo
+                        // (scrolling + keyboard navigation focus)
+                        if (isSelected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                static std::string default_name_str = "Inner Circle";
+                static char name_input[128] = "";
+                ImGui::InputTextWithHint("##no_text", default_name_str.c_str(), name_input, IM_ARRAYSIZE(name_input));
+
+
+                std::array<std::string, 2> normal_dir_str{ "Outward", "Inward" };
+                static bool normal_dir = 0;
+                const double  r_min = 0., r_max = 1.0;
+                static double r_slider = 0.0;
+                if (boundary_type_selector == 0)
+                {
+                    ImGui::SeparatorText("Geometry");
+                    ImGui::PushItemWidth(140);
+                    ImGui::DragScalar("##radius", ImGuiDataType_Double, &r_slider, 0.005f, &r_min, &r_max, "radius: %.4f");
+
+                    std::string text = "Normal Dir (" + normal_dir_str[normal_dir] + ")";
+                    if (ImGui::Checkbox(text.c_str(), &normal_dir))
+                    {
+                    }
+                    (normal_dir) ? default_name_str = "Inner Circle" : default_name_str = "Outer Circle";
+                    ImGui::PopItemWidth();
+                }
+
+                ImGui::SeparatorText("Boundary Condition");
+
+            	std::array<std::string, 2> bc_types{ "Dirichlet", "Neumann" };
+                static int bc_type_selector = 0;
+
+                if (ImGui::BeginCombo("BC", bc_types[bc_type_selector].c_str())) {
+                    for (int i = 0; i < bc_types.size(); ++i) {
+                        const bool isSelected = (bc_type_selector == i);
+                        if (ImGui::Selectable(bc_types[i].c_str(), isSelected)) {
+                            bc_type_selector = i;
+                        }
+
+                        // Set the initial focus when opening the combo
+                        // (scrolling + keyboard navigation focus)
+                        if (isSelected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
+
+                const double  bc_min = -10., bc_max = 10.0;
+                static double bc_slider = 0.0;
+
+                std::string label = "";
+                switch (bc_type_selector)
+                {
+                case 0:
+                    label = "phi: %.3f";
+                    break;
+                case 1:
+                    label = "d/dn(phi): %.3f";
+                    break;
+                default:
+                    label = "%.3f";
+                }
+
+                ImGui::PushItemWidth(140);
+                ImGui::DragScalar("##none", ImGuiDataType_Double, &bc_slider, 0.05f, &bc_min, &bc_max, label.c_str());
+                ImGui::PopItemWidth();
+
+                ImGui::NewLine();
+                ImGui::Separator();
+
+                if (ImGui::Button("OK", ImVec2(120, 0)))
+                {
+                    auto geom = std::make_shared<Circle2D_SDF>( Circle2D_SDF{ 0.5, 0.5, r_slider, bc_slider, normal_dir } );
+
+                    m_boundaries.push_back(geom);
+                    m_boundaries.back()->name_id = default_name_str;
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::SetItemDefaultFocus();
+                ImGui::SameLine();
+                if (ImGui::Button("Cancel", ImVec2(120, 0)))
+                {
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
+            }
+
+            static ImGuiTableFlags flags =
+                ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders
+        		| ImGuiTableFlags_ScrollY
+                | ImGuiTableFlags_SizingFixedFit;
+
+            if (ImGui::BeginTable("Boundaries", 4, flags, {0, 80}))
+            {
+                
+                // Display headers so we can inspect their interaction with borders.
+                // (Headers are not the main purpose of this section of the demo, so we are not elaborating on them too much. See other sections for details)
+                
+                ImGui::TableSetupColumn("Type");
+                ImGui::TableSetupColumn("Size");
+                ImGui::TableSetupColumn("Boundary Condition");
+                ImGui::TableSetupColumn("BC Value");
+                ImGui::TableHeadersRow();
+                
+
+                for (int row = 0; row < m_boundaries.size(); row++)
+                {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    std::string text = "Circle";
+                    ImGui::Text(text.c_str());
+
+                    ImGui::TableSetColumnIndex(1);
+                    text = std::to_string(m_boundaries[row]->GetSize());
+                    ImGui::Text(text.c_str());
+
+                    ImGui::TableSetColumnIndex(2);
+                    switch (m_boundaries[row]->GetBoundaryCondition())
+                    {
+                    case BoundaryCondition::Dirichlet:
+                        text = "Dirichlet";
+                        break;
+                    case BoundaryCondition::Neumann:
+                        text = "Neumann";
+                        break;
+                    default:
+                        text = "error";
+                    }
+                    ImGui::Text(text.c_str());
+
+                    ImGui::TableSetColumnIndex(3);
+                    text = std::to_string(m_boundaries[row]->GetBoundaryPhi());
+                    ImGui::Text(text.c_str());
+                }
+                ImGui::EndTable();
+            }
+
+            ImGui::SeparatorText("Simulation");
+
+            if (ImGui::Button("Apply Boundaries"))
+            {
+                for (auto& [size, solution] : m_solver.GetSolutions())
+                {
+                    for (auto& boundary : m_boundaries)
+                    {
+                        solution->m_mesh_grid->AddImmersedBoundary(boundary->name_id, boundary);
+                    }
+                    solution->m_mesh_grid->UpdateGrid();
+                }
+            }
+
+            if (ImGui::Button("Initialize"))
+            {
+                for (auto& [size, solution] : m_solver.GetSolutions())
+                {
+                    solution->m_mesh_grid->InitializeField();
+                }
+            }
+            
+
             ImGui::End();
         }
 
         if (ImGui::Begin("CENTER"))
         {
-            ImGui::BeginChild("GameRender");
-            // Get the size of the child (i.e. the whole draw size of the windows).
-            ImVec2 wsize = ImGui::GetWindowSize();
-            // Because I use the texture from OpenGL, I need to invert the V from the UV.
-            ImTextureID id = (ImTextureID)models[selected_mat].GetTextureBuffer();
-            //ImTextureID id = (ImTextureID)test_meshes[selected_mat].out_texture_buffer;
-            ImGui::Image(id, wsize, ImVec2(0, 1), ImVec2(1, 0));
-            ImGui::EndChild();
+	        if (!models.empty())
+	        {
+                ImGui::BeginChild("GameRender");
+                // Get the size of the child (i.e. the whole draw size of the windows).
+                ImVec2 wsize = ImGui::GetWindowSize();
+                ImVec2 wpos = ImGui::GetWindowPos();
+                ImVec2 mouse_pos = ImGui::GetMousePos();
+
+                glm::vec2 rel_mouse_pos { std::clamp((mouse_pos.x - wpos.x) / wsize.x, 0.0f, 1.0f), std::clamp((mouse_pos.y - wpos.y) / wsize.y, 0.0f, 1.0f) };
+                static glm::vec2 rel_mouse_pos_old = rel_mouse_pos;
+                static glm::vec2 delta_old{ 0.0 };
+                static glm::vec2 delta{ 0.0 };
+
+                if (io.MouseDownDuration[0] < 0.01f) // just pressed
+                {
+	                // reset mouse pos
+                    rel_mouse_pos_old = rel_mouse_pos;
+                }
+                delta_old = delta;
+                delta = rel_mouse_pos - rel_mouse_pos_old;
+
+                auto acc = delta - delta_old;
+				acc.x = -acc.x;
+
+                if (io.MouseDownDuration[0] > 0.01f && ImGui::IsWindowFocused())
+                {
+                    camera.MouseTranslate(acc);
+                }
+                if (ImGui::IsWindowHovered())
+                {
+                    camera.ScrollZoom(io.MouseWheel);
+                }
+
+                // Because I use the texture from OpenGL, I need to invert the V from the UV.
+                ImTextureID id = (ImTextureID)models[selected_mat].GetTextureBuffer();
+                //ImTextureID id = (ImTextureID)test_meshes[selected_mat].out_texture_buffer;
+                ImGui::Image(id, wsize, ImVec2(0, 1), ImVec2(1, 0));
+                ImGui::EndChild();
+	        }
+            
             ImGui::End();
         }
 

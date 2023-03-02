@@ -15,6 +15,8 @@ enum class BoundaryCondition {
 class GeometrySDF
 {
 public:
+	std::string name_id = "";
+
 	GeometrySDF();
 	GeometrySDF(double pos_x, double pos_y, double boundary_phi, bool inverse_sign = false);
 	~GeometrySDF() = default;
@@ -38,6 +40,7 @@ public:
 
 	virtual Eigen::Vector2d GetNormal(double sample_x, double sample_y) { return Eigen::Vector2d{}; };
 	virtual double GetBoundaryPhi() { return m_boundary_phi; };
+	virtual double GetSize() = 0;
 
 protected:
 	BoundaryCondition m_boundary_condition = BoundaryCondition::Dirichlet;
@@ -60,6 +63,10 @@ public:
 	//virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) override;
 
 	Eigen::Vector2d GetNormal(double sample_x, double sample_y) override;
+	double GetSize()
+	{
+		return m_radius;
+	}
 
 private:
 	double m_radius;

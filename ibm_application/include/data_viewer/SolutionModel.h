@@ -12,11 +12,16 @@
 class SolutionModel
 {
 public:
+	std::string size_id = "";
+	size_t m_size = 0;
+
 	SolutionModel() {}
 
 	void SetSolution(std::shared_ptr<Solution> solution)
 	{
 		m_solution = solution;
+		m_size = solution->m_mesh_grid->GetMeshSize().first;
+		size_id = std::to_string(m_size) + "x" + std::to_string(m_size);
 	}
 
 	void SetMVP(const std::tuple<glm::mat4, glm::mat4, glm::mat4>& mvp_in)
@@ -27,8 +32,22 @@ public:
 	void DrawSolutionModelToTexture()
 	{
 		shaders.use();
+
+		if (!m_mesh.textures.empty())
+		{
+			glBindTexture(GL_TEXTURE_2D, m_mesh.textures[0].id);
+			auto mat = EigenMatToVector<int>(m_solution->m_mesh_grid->GetGridFlags());
+			int* data = mat.first.data();
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_R16I, mat.second, mat.second, 0, GL_RED_INTEGER, GL_INT, data);
+		}
+
 		shaders.SetMat4fv("mvp", m_mesh.mvp);
 		m_mesh.DrawToTexture(shaders);
+	}
+
+	void InitData()
+	{
+		AddIntegerDataTexture(m_solution->m_mesh_grid->GetGridFlags());
 	}
 
 	void AddIntegerDataTexture(const Eigen::MatrixXi& eigen_mat)

@@ -41,10 +41,10 @@ int main(int argc, char* argv[])
     //std::shared_ptr<CartGrid> grid_6 = std::make_shared<CartGrid>(705);
     //std::shared_ptr<CartGrid> grid_7 = std::make_shared<CartGrid>(1409);
 
-    int base_level_iterations = 800;
-    std::shared_ptr<Solver> test_solver = std::make_shared<Solver>(0.001, base_level_iterations);
-    test_solver->AddSolution(0, std::make_unique<FTCS_Scheme>(grid_0), grid_0, base_level_iterations);
-    test_solver->AddSolution(1, std::make_unique<FTCS_Scheme>(grid_1), grid_1, EquivalentIterations(1, base_level_iterations) );
+    //int base_level_iterations = 800;
+    //std::shared_ptr<Solver> test_solver = std::make_shared<Solver>(0.001, base_level_iterations);
+    //test_solver->AddSolution(0, std::make_unique<FTCS_Scheme>(grid_0), grid_0, base_level_iterations);
+    //test_solver->AddSolution(1, std::make_unique<FTCS_Scheme>(grid_1), grid_1, EquivalentIterations(1, base_level_iterations) );
     //test_solver->AddSolution(2, std::make_unique<FTCS_Scheme>(grid_2), grid_2, EquivalentIterations(2, base_level_iterations) );
     //test_solver->AddSolution(3, std::make_unique<FTCS_Scheme>(grid_3), grid_3, EquivalentIterations(3, base_level_iterations) );
     //test_solver->AddSolution(4, std::make_unique<FTCS_Scheme>(grid_4), grid_4, EquivalentIterations(4, base_level_iterations) );
@@ -54,9 +54,9 @@ int main(int argc, char* argv[])
     //test_solver->AddSolution(4, std::make_unique<FTCS_Scheme>(fine_4), fine_4);
     //test_solver->SetRichardsonMethod(richardson_extrapolation);
 
-    std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(std::filesystem::current_path().parent_path().parent_path() / "scripts/export_data.h5", DataExporter::LoggingConfig::Steady);
+    //std::shared_ptr<DataExporter> data_export = std::make_shared<DataExporter>(std::filesystem::current_path().parent_path().parent_path() / "scripts/export_data.h5", DataExporter::LoggingConfig::Steady);
 
-    test_solver->SetDataExporter(data_export);
+    //test_solver->SetDataExporter(data_export);
    
     bool exit_menu = false;
     while (!exit_menu)
@@ -88,17 +88,31 @@ int main(int argc, char* argv[])
             // Prepare an SDLGraphics instance
             DataViewer data_viewer;
 
-            data_viewer.grids.push_back(grid_0);
-            data_viewer.grids.push_back(grid_1);
+            //data_viewer.grids.push_back(grid_0);
+            //data_viewer.grids.push_back(grid_1);
 
             // Launch our SDLGraphics program
             data_viewer.DataViewerInitialize();
 
-            data_viewer.models.emplace_back(SolutionModel{});
-            data_viewer.models.emplace_back(SolutionModel{});
+            data_viewer.m_solver.AddSolution(0.001, 12);
+            SolutionModel view_model{};
+            view_model.SetSolution(data_viewer.m_solver.GetSolution(12));
+            view_model.InitData();
+            data_viewer.models.push_back(view_model);
 
-            data_viewer.models[0].AddIntegerDataTexture(grid_0->GetGridFlags());
-            data_viewer.models[1].AddIntegerDataTexture(grid_1->GetGridFlags());
+            std::shared_ptr<Circle2D_SDF> inner_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 1.0 });
+            inner_circle->name_id = "Inner Circle";
+            std::shared_ptr<Circle2D_SDF> outer_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 2.0, true });
+            outer_circle->name_id = "Outer Circle";
+
+            data_viewer.m_boundaries.push_back(inner_circle);
+            data_viewer.m_boundaries.push_back(outer_circle);
+
+            //data_viewer.models.emplace_back(SolutionModel{});
+            //data_viewer.models.emplace_back(SolutionModel{});
+
+            //data_viewer.models[0].AddIntegerDataTexture(grid_0->GetGridFlags());
+            //data_viewer.models[1].AddIntegerDataTexture(grid_1->GetGridFlags());
 
             data_viewer.RunDataViewer();
             break;
@@ -110,18 +124,18 @@ int main(int argc, char* argv[])
             
             std::shared_ptr<Circle2D_SDF> outer_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 2.0, true });
 
-            data_export->WriteGeometry("inner", *inner_circle, 0.15);
-            data_export->WriteGeometry("outer", *outer_circle, 0.45);
+            //data_export->WriteGeometry("inner", *inner_circle, 0.15);
+            //data_export->WriteGeometry("outer", *outer_circle, 0.45);
 
-            grid_0->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            grid_0->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            grid_0->UpdateGrid();
-            grid_0->InitializeField();
+            //grid_0->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            //grid_0->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            //grid_0->UpdateGrid();
+            //grid_0->InitializeField();
 
-            grid_1->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            grid_1->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            grid_1->UpdateGrid();
-            grid_1->InitializeField();
+            //grid_1->AddImmersedBoundary("Inner Cylinder", inner_circle);
+            //grid_1->AddImmersedBoundary("Outer Cylinder", outer_circle);
+            //grid_1->UpdateGrid();
+            //grid_1->InitializeField();
 
             //grid_2->AddImmersedBoundary("Inner Cylinder", inner_circle);
             //grid_2->AddImmersedBoundary("Outer Cylinder", outer_circle);
@@ -162,7 +176,7 @@ int main(int argc, char* argv[])
             //fine_4->AddImmersedBoundary("Outer Cylinder", outer_circle);
             //fine_4->UpdateGrid();
 
-            test_solver->PerformStep(-1);
+            //test_solver->PerformStep(-1);
             break;
         }
         case 3:

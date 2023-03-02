@@ -41,7 +41,7 @@ public:
     unsigned int VAO;
 
     unsigned int out_texture_buffer;
-    std::pair<int, int> viewport_width_height{ 800, 800 };
+    std::pair<int, int> viewport_width_height{ 1600, 1600 };
 
     glm::vec3 pos{ 0.0 };
 

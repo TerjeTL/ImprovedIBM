@@ -6,6 +6,7 @@
 #include "ibm_application/CartGrid.h"
 #include "imgui.h"
 #include "data_viewer/Camera.h"
+#include "ibm_application/Solver.h"
 
 class DataViewer
 {
@@ -16,9 +17,9 @@ public:
 
 	void RunDataViewer();
 
+	Solver m_solver;
 	std::vector<SolutionModel> models;
-
-	std::vector<std::shared_ptr<CartGrid>> grids;
+	std::vector<std::shared_ptr<GeometrySDF>> m_boundaries;
 private:
 	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 	SDL_Window* window;

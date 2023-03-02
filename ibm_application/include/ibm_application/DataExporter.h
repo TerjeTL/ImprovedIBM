@@ -65,10 +65,10 @@ public:
 	{
 		for (auto const& [mesh_level, solution] : *m_solutions)
 		{
-			if (solution.converged)
-			{
-				continue;
-			}
+			//if (solution.converged)
+			//{
+			//	continue;
+			//}
 
 			std::string curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + time_dir + "/" + std::to_string(solution.m_time);
 
@@ -126,7 +126,7 @@ public:
 		H5Easy::dump(m_file, curr_dir, mat);
 
 		// 2-norm
-		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/euclidian_norm";
+		/*curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/euclidian_norm";
 		double data_value = 0.0;
 		if (solution.m_iteration == 1)
 		{
@@ -136,7 +136,7 @@ public:
 		{
 			data_value = solution.euclidian_norm;
 		}
-		H5Easy::dump(m_file, curr_dir, data_value, { logger_it });
+		H5Easy::dump(m_file, curr_dir, data_value, { logger_it });*/
 	
 	}
 
