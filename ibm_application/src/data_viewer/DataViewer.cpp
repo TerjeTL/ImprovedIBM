@@ -251,6 +251,7 @@ void DataViewer::RunDataViewer()
             ImGui::DockBuilderFinish(dockspace_id);
         }
 
+        static int selected_simulation_run;
         if (ImGui::Begin("LEFT"))
         {
             if (ImGui::Button("Add Simulation"))
@@ -523,15 +524,86 @@ void DataViewer::RunDataViewer()
                     solution->m_mesh_grid->InitializeField();
                 }
             }
-            
 
+            ImGui::Separator();
+            static ImGuiTableFlags table_flags =
+                ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders
+                | ImGuiTableFlags_ScrollY
+                | ImGuiTableFlags_SizingFixedFit;
+
+            if (ImGui::BeginTable("Simulations", 3, table_flags, { 0, 80 }))
+            {
+
+                // Display headers so we can inspect their interaction with borders.
+                // (Headers are not the main purpose of this section of the demo, so we are not elaborating on them too much. See other sections for details)
+
+                ImGui::TableSetupColumn("Size");
+                ImGui::TableSetupColumn("Iterations");
+                ImGui::TableSetupColumn("Time");
+                ImGui::TableHeadersRow();
+
+                for (const auto& [size, solution] : m_solver.GetSolutions())
+                {
+                    //if (!filter.PassFilter(item->Name))
+                    //    continue;
+
+                    const bool item_is_selected = (selected_simulation_run == size);
+                    ImGui::PushID(size);
+                    ImGui::TableNextRow(ImGuiTableRowFlags_None, 0.0f);
+
+                    // For the demo purpose we can select among different type of items submitted in the first column
+                    ImGui::TableSetColumnIndex(0);
+                    std::string label = std::to_string(size) + " x " + std::to_string(size);
+                    if (ImGui::Selectable(label.c_str(), item_is_selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap, ImVec2(0, 0)))
+                    {
+                        if (ImGui::GetIO().KeyCtrl)
+                        {
+                            //if (item_is_selected)
+                            //    selection.find_erase_unsorted(size);
+                            //else
+                            //    selection.push_back(size);
+                        }
+                        else
+                        {
+                            selected_simulation_run = size;
+                        }
+                    }
+                    
+
+                    //ImGui::TableNextRow();
+                    //ImGui::TableSetColumnIndex(0);
+                    //ImGui::Text("%zu x %zu", size, size);
+
+                    ImGui::TableSetColumnIndex(1);
+                    std::string text = std::to_string(solution->m_iteration);
+                    ImGui::Text(text.c_str());
+
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Text(std::to_string(solution->m_time).c_str());
+                }
+                ImGui::EndTable();
+            }
+
+            if (ImGui::Button("Run Simulation"))
+            {
+                m_solver.GetSolution(selected_simulation_run)->RecursiveUpdateFromThis();
+            }
+            
             ImGui::End();
         }
 
         if (ImGui::Begin("CENTER"))
         {
+            {
+                ImGui::BeginChild("ChildL", ImVec2(ImGui::GetContentRegionAvail().x * 0.25f, ImGui::GetContentRegionAvail().y), true, NULL);
+                for (int i = 0; i < 10; i++)
+                    ImGui::Text("%04d: scrollable region", i);
+                ImGui::EndChild();
+            }
+
 	        if (!models.empty())
 	        {
+                ImGui::SameLine();
                 ImGui::BeginChild("GameRender");
                 // Get the size of the child (i.e. the whole draw size of the windows).
                 ImVec2 wsize = ImGui::GetWindowSize();

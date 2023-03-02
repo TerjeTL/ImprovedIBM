@@ -4,6 +4,8 @@
 #include "Shader.h"
 #include "ibm_application/DataStructs.h"
 
+#include <filesystem>
+
 // holds
 // - mesh to draw
 // - shader to use
@@ -121,8 +123,10 @@ private:
 	};
 
 	Mesh m_mesh{verts, indices, {}};
-	Shader shaders{ "D:/Development/C++/ibm_application/ibm_application/src/shaders/MatrixViewer.vert",
-	"D:/Development/C++/ibm_application/ibm_application/src/shaders/MatrixViewer.frag" };
+
+	std::filesystem::path vert_path = std::filesystem::current_path().parent_path().parent_path() / "ibm_application/src/shaders/MatrixViewer.vert";
+	std::filesystem::path frag_path = std::filesystem::current_path().parent_path().parent_path() / "ibm_application/src/shaders/MatrixViewer.frag";
+	Shader shaders{ vert_path.string().c_str(), frag_path.string().c_str() };
 
 	std::shared_ptr<Solution> m_solution = nullptr;
 };

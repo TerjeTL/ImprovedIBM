@@ -25,6 +25,53 @@ struct Solution
 		m_time += m_dt;
 	}
 
+	void RecursiveUpdateFromThis()
+	{
+		Update();
+
+		if (fine_grid)
+		{
+			fine_grid->RecursiveUpdate(this);
+		}
+		if (coarse_grid)
+		{
+			coarse_grid->RecursiveUpdate(this);
+		}
+	}
+
+	void RecursiveUpdate(Solution* from_solution, int recursive_level = 1)
+	{
+
+		auto num_it = std::round(std::pow(4, recursive_level));
+
+		if (coarse_grid.get() == from_solution) // func called from coarse grid
+		{
+			for (size_t i = 0; i < num_it; i++)
+			{
+				Update();
+			}
+
+			if (fine_grid)
+			{
+				fine_grid->RecursiveUpdate(this, ++recursive_level);
+			}
+		}
+		else if (fine_grid.get() == from_solution) // func called from fine grid
+		{
+			fine_grid_it_delta++;
+			if (fine_grid_it_delta >= num_it)
+			{
+				Update();
+				fine_grid_it_delta = 0;
+			}
+
+			if (coarse_grid)
+			{
+				coarse_grid->RecursiveUpdate(this, ++recursive_level);
+			}
+		}
+	}
+
 	void TaskFinishedPrintout()
 	{
 		std::ios oldState(nullptr);
@@ -49,6 +96,7 @@ struct Solution
 
 	std::shared_ptr<Solution> coarse_grid = nullptr;
 	std::shared_ptr<Solution> fine_grid = nullptr;
+	unsigned int fine_grid_it_delta = 0; // need to update this for every n number of fine grid iterations 
 
 	//double euclidian_norm = 0.0;
 	//double euclidian_norm_init = 0.0;

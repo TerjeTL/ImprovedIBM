@@ -36,15 +36,19 @@ public:
 	{
 		size_t grid_size = solution.m_mesh_grid->GetMeshSize().first; // using cols as size (assumption: square mesh)
 
-		// double it
-		grid_size = 2 * grid_size - 1;
+		size_t grid_size_double = 2 * grid_size - 1;
 		double dt = solution.m_dt / 4.0;
 
-		if (m_solutions.find(grid_size) == m_solutions.end())
+		if (m_solutions.find(grid_size_double) == m_solutions.end())
 		{
-			AddSolution(dt, grid_size);
-			//return new size (usage optional)
-			return grid_size;
+			AddSolution(dt, grid_size_double);
+
+			// im sure this wont end in tears
+			m_solutions[grid_size]->fine_grid = m_solutions[grid_size_double];
+			m_solutions[grid_size_double]->coarse_grid = m_solutions[grid_size];
+
+			// return new size (usage optional)
+			return grid_size_double;
 		}
 		else
 		{
