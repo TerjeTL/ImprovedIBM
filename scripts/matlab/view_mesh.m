@@ -51,7 +51,7 @@ plot_0 = plot_mesh_surface(mesh_0);
 zlim([0 2]);
 
 nexttile
-error_plot_0 = plot_mesh_surface(error_1);
+error_plot_0 = plot_mesh_surface(error_0);
 
 % level 1
 nexttile
@@ -63,7 +63,7 @@ plot_1 = plot_mesh_surface(mesh_1);
 zlim([0 2]);
 
 nexttile
-error_plot_1 = plot_mesh_surface(error_r);
+error_plot_1 = plot_mesh_surface(error_1);
 %zlim([0 0.45]);
 
 set(gcf,'position',[get(0, 'Screensize')])

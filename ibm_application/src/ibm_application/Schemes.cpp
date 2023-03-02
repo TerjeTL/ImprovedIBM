@@ -4,7 +4,7 @@
 
 #include <omp.h>
 
-//#define MT_ON
+#define MT_ON
 
 void FTCS_Scheme::BoundaryCondition()
 {

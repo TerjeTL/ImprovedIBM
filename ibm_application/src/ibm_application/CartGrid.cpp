@@ -384,6 +384,25 @@ double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
     std::cout << "PHI VECTOR\n" << phi_vec << "\n\n";
     std::cout << "GP VECTOR\n" << gp_vec << "\n\n";
     std::cout << "GP RECONSTRUCTION\n" << res << "\n\n";
+
+    auto normal = ghost_pt_rel.normalized();
+    std::cout << "NORMAL DIR\n" << normal << "\n\n";
+    std::vector<double> probe{ -1, -0.5, 0.0, 0.5, 1.0, 2.0 };
+    std::vector<std::string> data;
+
+    std::cout << "GP NORM POS\n" << ghost_pt_rel.dot(normal) << "\n\n";
+
+    for (auto loc : probe)
+    {
+        auto pos = normal * loc;
+        Eigen::Vector4d gp_vec{ 1.0, pos.x(), pos.y(), pos.x() * pos.y() };
+        auto val = C.dot(gp_vec);
+
+        auto str = "(" + std::to_string(loc) + "," + std::to_string(val) + ")";
+        data.push_back(str);
+
+        std::cout << str << "\n";
+    }
 #endif
 
     return res;
