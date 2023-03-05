@@ -27,9 +27,9 @@ public:
 
 	LoggingConfig GetLoggingConfig() const { return m_logging_type; }
 
-	void SetDataRef(std::shared_ptr<std::map<size_t, Solution>> solutions)
+	void SetSolverRef(std::shared_ptr<Solver> solver)
 	{
-		m_solutions = solutions;
+		m_solver = solver;
 	}
 
 	void GenerateHeaderInfos()
@@ -63,22 +63,22 @@ public:
 
 	void AppendCurrentState()
 	{
-		for (auto const& [mesh_level, solution] : *m_solutions)
+		for (auto const& [mesh_level, solution] : m_solver->GetSolutions())
 		{
 			//if (solution.converged)
 			//{
 			//	continue;
 			//}
 
-			std::string curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + time_dir + "/" + std::to_string(solution.m_time);
+			std::string curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + time_dir + "/" + std::to_string(solution->m_time);
 
 			// make a copy for now and store only active nodes
-			auto mat = solution.m_mesh_grid->GetPhiMatrix();
+			auto mat = solution->m_mesh_grid->GetPhiMatrix();
 			for (size_t j = 0; j < mat.rows(); j++)
 			{
 				for (size_t i = 0; i < mat.cols(); i++)
 				{
-					if (solution.m_mesh_grid->GetCellFlag(i, j) != 0)
+					if (solution->m_mesh_grid->GetCellFlag(i, j) != 0)
 					{
 						mat(j, i) = 0;
 					}
@@ -140,6 +140,14 @@ public:
 	
 	}
 
+	void WriteSteadyStateAll()
+	{
+		for (const auto& [size, solution] : m_solver->GetSolutions())
+		{
+			WriteSteadyState(*solution, size);
+		}
+	}
+
 	void WriteSteadyState(const Solution& solution, int mesh_level)
 	{
 		// End time	
@@ -172,11 +180,10 @@ public:
 		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/steady_state/boundary_values";
 		
 		Eigen::MatrixXd boundary_phi = Eigen::MatrixXd::Zero(mat.rows(), mat.cols());
-		for (size_t j = 1; j < mat.rows()-1; j++)
+		for (size_t j = 0; j < mat.rows(); j++)
 		{
-			for (size_t i = 1; i < mat.cols()-1; i++)
+			for (size_t i = 0; i < mat.cols(); i++)
 			{
-				
 				if (solution.m_mesh_grid->GetCellFlag(i, j) == 2)
 				{
 					auto east = solution.m_mesh_grid->GetCellFlag(i + 1, j);
@@ -213,7 +220,7 @@ public:
 	}
 private:
 	LoggingConfig m_logging_type;
-	std::shared_ptr<std::map<size_t, Solution>> m_solutions = nullptr;
+	std::shared_ptr<Solver> m_solver = nullptr;
 
 	std::string root_dir = "/solutions";
 	std::string time_dir = "/time_data";

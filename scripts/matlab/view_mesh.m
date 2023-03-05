@@ -7,15 +7,15 @@ FILE = "../export_data.h5";
 
 %% Get Geometric Params
 % radius, x, y, bc_phi
-raw_data = h5read(FILE, "/geometry/inner/data");
+raw_data = h5read(FILE, "/geometry/Inner Circle/data");
 r_inner = raw_data(1);
 bc_phi_inner = raw_data(4);
-bc_inner = h5read(FILE, "/geometry/inner/bc");
+bc_inner = h5read(FILE, "/geometry/Inner Circle/bc");
 
-raw_data = h5read(FILE, "/geometry/outer/data");
+raw_data = h5read(FILE, "/geometry/Outer Circle/data");
 r_outer = raw_data(1);
 bc_phi_outer = raw_data(4);
-bc_outer = h5read(FILE, "/geometry/outer/bc");
+bc_outer = h5read(FILE, "/geometry/Outer Circle/bc");
 
 %% Get Solution to Analytical Eqns
 [A, B] = analytical_solver(r_inner, bc_phi_inner, bc_inner, ...
@@ -23,8 +23,8 @@ bc_outer = h5read(FILE, "/geometry/outer/bc");
 
 %% Get Steady State Solution
 
-mesh_0 = load_steady_state_solution(FILE, "mesh_1", nan);
-mesh_1 = load_steady_state_solution(FILE, "mesh_2", nan);
+mesh_0 = load_steady_state_solution(FILE, "mesh_12", nan);
+mesh_1 = load_steady_state_solution(FILE, "mesh_23", nan);
 %mesh_1 = mesh_1(1:8:end, 1:8:end);
 
 r_1 = richardson_extrapolation(mesh_0, mesh_1);

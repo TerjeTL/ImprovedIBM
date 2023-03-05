@@ -39,6 +39,9 @@ MessageCallback(GLenum source,
 
 void DataViewer::DataViewerInitialize()
 {
+    // set up references
+    m_data_export.SetSolverRef(m_solver);
+
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
@@ -160,7 +163,6 @@ void DataViewer::RunDataViewer()
 
         // Main Menu --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         static bool opt_fullscreen = true;
-        static bool opt_padding = false;
         static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
         // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
@@ -213,14 +215,19 @@ void DataViewer::RunDataViewer()
                 // Disabling fullscreen would allow the window to be moved to the front of other windows,
                 // which we can't undo at the moment without finer window depth/z control.
                 ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen);
-                ImGui::MenuItem("Padding", NULL, &opt_padding);
                 ImGui::Separator();
 
-                if (ImGui::MenuItem("Flag: NoSplit", "", (dockspace_flags & ImGuiDockNodeFlags_NoSplit) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_NoSplit; }
-                if (ImGui::MenuItem("Flag: NoResize", "", (dockspace_flags & ImGuiDockNodeFlags_NoResize) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_NoResize; }
-                if (ImGui::MenuItem("Flag: NoDockingInCentralNode", "", (dockspace_flags & ImGuiDockNodeFlags_NoDockingInCentralNode) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_NoDockingInCentralNode; }
-                if (ImGui::MenuItem("Flag: AutoHideTabBar", "", (dockspace_flags & ImGuiDockNodeFlags_AutoHideTabBar) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_AutoHideTabBar; }
-                if (ImGui::MenuItem("Flag: PassthruCentralNode", "", (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode) != 0, opt_fullscreen)) { dockspace_flags ^= ImGuiDockNodeFlags_PassthruCentralNode; }
+                if (ImGui::MenuItem("Save", ""))
+                {
+	                if (m_solver)
+	                {
+                        for (const auto& boundary : m_boundaries)
+                        {
+                            m_data_export.WriteGeometry(boundary->name_id, *dynamic_cast<Circle2D_SDF*>(boundary.get()), boundary->GetSize());
+                        }
+                        m_data_export.WriteSteadyStateAll();
+	                }
+                }
                 ImGui::Separator();
                 ImGui::EndMenu();
             }
@@ -260,12 +267,12 @@ void DataViewer::RunDataViewer()
             if (ImGui::Button("Refine Selected") && !models.empty())
             {
                 size_t size = models[selected_mat].m_size;
-                size = m_solver.AddGridDoubledSolution(*m_solver.GetSolution(size)); // add new solution and get the new size
+                size = m_solver->AddGridDoubledSolution(*m_solver->GetSolution(size)); // add new solution and get the new size
 
                 if (size != 0)
                 {
                     SolutionModel view_model{};
-                    view_model.SetSolution(m_solver.GetSolution(size));
+                    view_model.SetSolution(m_solver->GetSolution(size));
                     view_model.InitData();
                     models.push_back(view_model);
                 }
@@ -295,10 +302,10 @@ void DataViewer::RunDataViewer()
 
                 if (ImGui::Button("OK", ImVec2(120, 0)))
                 {
-                    m_solver.AddSolution(dt_slider, size_slider);
+                    m_solver->AddSolution(dt_slider, size_slider);
 
                 	SolutionModel view_model{};
-                    view_model.SetSolution(m_solver.GetSolution(size_slider));
+                    view_model.SetSolution(m_solver->GetSolution(size_slider));
                     view_model.InitData();
                     models.push_back(view_model);
 
@@ -507,7 +514,7 @@ void DataViewer::RunDataViewer()
 
             if (ImGui::Button("Apply Boundaries"))
             {
-                for (auto& [size, solution] : m_solver.GetSolutions())
+                for (auto& [size, solution] : m_solver->GetSolutions())
                 {
                     for (auto& boundary : m_boundaries)
                     {
@@ -519,7 +526,7 @@ void DataViewer::RunDataViewer()
 
             if (ImGui::Button("Initialize"))
             {
-                for (auto& [size, solution] : m_solver.GetSolutions())
+                for (auto& [size, solution] : m_solver->GetSolutions())
                 {
                     solution->m_mesh_grid->InitializeField();
                 }
@@ -542,7 +549,7 @@ void DataViewer::RunDataViewer()
                 ImGui::TableSetupColumn("Time");
                 ImGui::TableHeadersRow();
 
-                for (const auto& [size, solution] : m_solver.GetSolutions())
+                for (const auto& [size, solution] : m_solver->GetSolutions())
                 {
                     //if (!filter.PassFilter(item->Name))
                     //    continue;
@@ -584,9 +591,28 @@ void DataViewer::RunDataViewer()
                 ImGui::EndTable();
             }
 
-            if (ImGui::Button("Run Simulation"))
+
+            // Simulation running logic
+            const unsigned int  it_min = 0, it_max = 1000;
+            static unsigned int it_slider = 800;
+
+            ImGui::PushItemWidth(120);
+            if (ImGui::Button("Run Simulation") && selected_simulation_run != 0)
             {
-                m_solver.GetSolution(selected_simulation_run)->RecursiveUpdateFromThis();
+                m_run_simulation = true;
+                m_interations_remaining = it_slider;
+            }
+            ImGui::SameLine(140);
+            ImGui::DragScalar("##iterations_slider", ImGuiDataType_U32, &it_slider, 0.2f, &it_min, &it_max, "n: %u");
+            ImGui::PopItemWidth();
+
+            if ( m_run_simulation && m_interations_remaining-- > 0 )
+            {
+                m_solver->GetSolution(selected_simulation_run)->RecursiveUpdateFromThis();
+            }
+            else
+            {
+                m_run_simulation = false;
             }
             
             ImGui::End();

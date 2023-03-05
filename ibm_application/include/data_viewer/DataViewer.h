@@ -4,6 +4,7 @@
 #include "data_viewer/SolutionModel.h"
 
 #include "ibm_application/CartGrid.h"
+#include "ibm_application/DataExporter.h"
 #include "imgui.h"
 #include "data_viewer/Camera.h"
 #include "ibm_application/Solver.h"
@@ -11,13 +12,14 @@
 class DataViewer
 {
 public:
-	DataViewer() : window_width( 720 ), window_height( 480 ) {};
+	DataViewer() : window_width( 720 ), window_height( 480 ) {}
 	void DataViewerInitialize();
 	~DataViewer() = default;
 
 	void RunDataViewer();
 
-	Solver m_solver;
+	std::shared_ptr<Solver> m_solver{std::make_shared<Solver>()};
+	DataExporter m_data_export{ std::filesystem::current_path().parent_path().parent_path() / "scripts/export_data.h5", DataExporter::LoggingConfig::Steady };
 	std::vector<SolutionModel> models;
 	std::vector<std::shared_ptr<GeometrySDF>> m_boundaries;
 private:
@@ -30,6 +32,9 @@ private:
 	int window_height;
 
 	uint16_t selected_mat = 0;
+
+	bool m_run_simulation = false;
+	int m_interations_remaining = 0;
 
 	SDL_bool quit = SDL_FALSE;
 	SDL_bool mouse_active = SDL_FALSE;
