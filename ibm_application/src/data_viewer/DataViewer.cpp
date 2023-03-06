@@ -630,7 +630,7 @@ void DataViewer::RunDataViewer()
 	        if (!models.empty())
 	        {
                 ImGui::SameLine();
-                ImGui::BeginChild("GameRender");
+                ImGui::BeginChild("TextureRender");
                 // Get the size of the child (i.e. the whole draw size of the windows).
                 ImVec2 wsize = ImGui::GetWindowSize();
                 ImVec2 wpos = ImGui::GetWindowPos();

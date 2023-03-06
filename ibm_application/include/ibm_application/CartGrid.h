@@ -81,6 +81,7 @@ public:
 
 	double BilinearInterpolation(size_t i, size_t j);
 
+	void WLSQInit();
 	double WeightedLeastSquaresMethod(size_t i, size_t j);
 
 	const Eigen::MatrixXd& GetPhiMatrix() const
@@ -138,6 +139,12 @@ private:
 	Eigen::MatrixXd phi_image_point_matrix;
 	Eigen::MatrixXd boundary_phi;
 	Eigen::MatrixX<size_t> ghost_point_parent_sdf;
+
+	// Weighted Least Squares Method
+	//#################################################################
+	// Holds copy of the data for the duration of setting the boundary
+	// conditions in order to not iteratively skew the method.
+	Eigen::MatrixXd m_wlsq_phi_matrix;
 
 	// Debugging-oriented variables
 	std::map<std::pair<int, int>, std::array<Eigen::Vector2d, 4>> bilinear_interp_selection;

@@ -5,9 +5,13 @@
 #include <omp.h>
 
 //#define MT_ON
+//#define DEBUG_TERMINAL_WLSQ
 
 void FTCS_Scheme::BoundaryCondition()
 {
+	// prepare wlsq for new step
+	m_mesh_grid->WLSQInit();
+
 	auto grid_extents = m_mesh_grid->GetMeshSize();
 	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
 
@@ -62,6 +66,10 @@ void FTCS_Scheme::BoundaryCondition()
 			
 		}
 	}
+
+#ifdef DEBUG_TERMINAL_WLSQ
+	std::cout << "PHI MATRIX\n" << m_mesh_grid->GetPhiMatrix() << "\n\n";
+#endif
 }
 
 void FTCS_Scheme::Update(double dt, double r)

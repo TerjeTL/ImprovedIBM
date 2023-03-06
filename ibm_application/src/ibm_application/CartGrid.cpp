@@ -8,6 +8,8 @@
 #include <iostream>
 #include <assert.h>
 
+//#define DEBUG_TERMINAL_WLSQ
+
 CartGrid::CartGrid(size_t nn, double phi_0) : grid_flags(Eigen::MatrixXi::Zero(nn, nn)), phi_matrix(Eigen::MatrixXd::Zero(nn, nn)),
 phi_image_point_matrix(Eigen::MatrixXd::Zero(nn, nn)), boundary_phi(Eigen::MatrixXd::Zero(nn, nn)), ghost_point_parent_sdf(Eigen::MatrixX<size_t>::Zero(nn, nn))
 {
@@ -223,13 +225,22 @@ double CartGrid::BilinearInterpolation(size_t i, size_t j)
 }
 
 
+// Implementing WLSQ method
+// NB! Make sure to call init before using
+void CartGrid::WLSQInit()
+{
+    m_wlsq_phi_matrix = phi_matrix;
+}
+
 double WeightingFunc(double x_n, double y_n, double a_d)
 {
     double d_n = std::sqrt(std::pow(x_n, 2.0) + std::pow(y_n, 2.0));
-    return std::exp(-std::pow(d_n, 2.0)/a_d);
+
+    //std::cout << "relative dist: " << d_n << "\n\n";
+
+    return std::exp(-std::pow(d_n, 2.0) / a_d);
 }
 
-// Implementing WLSQ method
 double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
 {
     // get the selection of nodes
@@ -244,15 +255,12 @@ double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
     // Find the dimensions needed to grab the required number of points
     int c_x = ghost_point.x();
     int c_y = ghost_point.y();
-    const int required_nodes = 25;
+    const int required_nodes = 15;
     Eigen::MatrixXi selection;
     int selected_nodes = 0;
     int selection_size = 0;
     int x_corner = 0;
     int y_corner = 0;
-    //std::cout << image_point << "\n\n";
-    //std::cout << ghost_point << "\n\n";
-    //std::cout << boundary_intercept << "\n\n";
 
     while (selected_nodes < required_nodes)
     {
@@ -261,8 +269,8 @@ double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
         int delta_range = selection_size + 1;
         int span = delta_range * 2 + 1;
 
-        x_corner = std::clamp(c_x - delta_range, 0, (int)grid_flags.cols() - span - 1 );
-        y_corner = std::clamp(c_y - delta_range, 0, (int)grid_flags.rows() - span - 1 );
+        x_corner = std::clamp(c_x - delta_range, 0, (int)grid_flags.cols() - span );
+        y_corner = std::clamp(c_y - delta_range, 0, (int)grid_flags.rows() - span );
 
         // Get the subselection of nodes and check number of fluid points
         selection = grid_flags.block(y_corner, x_corner, span, span);
@@ -271,8 +279,6 @@ double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
 
         selection_size++;
     }
-
-    //std::cout << "SELECTION\n" << selection << "\n\n";
 
     // construct vandermonde matrix, starting with BI as first row, GP as second row
     Eigen::MatrixXd vandermonde = Eigen::MatrixXd::Zero(selected_nodes + 1, 4);
@@ -288,16 +294,13 @@ double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
         {
             if (selection(j, i) == 0)
             {
-
-                auto node_loc = (Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) } - boundary_intercept);
-                vandermonde.row(idx) = Eigen::Vector4d{ 1.0, node_loc.x(), node_loc.y(), node_loc.x() * node_loc.y() };
+                Eigen::Vector2d selected_node_rel_loc = Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) } - boundary_intercept;
+                vandermonde.row(idx) = Eigen::Vector4d{ 1.0, selected_node_rel_loc.x(), selected_node_rel_loc.y(), selected_node_rel_loc.x() * selected_node_rel_loc.y() };
 
                 idx++;
             }
         }
     }
-
-    //std::cout << "VANDERMONDE\n" << vandermonde << "\n\n";
 
     // Construct weighting matrix
     Eigen::VectorXd weighting_coeffs(selected_nodes + 1);
@@ -309,11 +312,13 @@ double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
         {
             if (selection(j, i) == 0)
             {
-                auto node_loc = (Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) } - boundary_intercept);
-                a_d += std::pow(node_loc.x(), 2.0) + std::pow(node_loc.y(), 2.0);
+                Eigen::Vector2d selected_node_rel_loc = Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) } - boundary_intercept;
+
+                a_d += std::pow(selected_node_rel_loc.x(), 2.0) + std::pow(selected_node_rel_loc.y(), 2.0);
             }
         }
     }
+    a_d = a_d / static_cast<double>(selected_nodes);
 
     weighting_coeffs[0] = 1.0;
     //weighting_coeffs[1] = WeightingFunc(ghost_pt_rel.x(), ghost_pt_rel.y(), a_d);
@@ -325,8 +330,8 @@ double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
         {
             if (selection(j, i) == 0)
             {
-                auto node_loc = (Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) } - boundary_intercept);
-                weighting_coeffs[n] = WeightingFunc(node_loc.x(), node_loc.y(), a_d);
+                Eigen::Vector2d selected_node_rel_loc = Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) } - boundary_intercept;
+                weighting_coeffs[n] = WeightingFunc(selected_node_rel_loc.x(), selected_node_rel_loc.y(), a_d);
 
                 n++;
             }
@@ -334,7 +339,6 @@ double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
     }
     
     Eigen::MatrixXd weighting_matrix = weighting_coeffs.asDiagonal();
-    //std::cout << "WEIGHTING MATRIX\n" << weighting_matrix << "\n\n";
 
     // construct phi vector
     Eigen::VectorXd phi_vec(selected_nodes + 1);
@@ -351,13 +355,11 @@ double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
         {
             if (selection(j, i) == 0)
             {
-                phi_vec[n] = phi_matrix(y_corner + j, x_corner + i);
+                phi_vec[n] = m_wlsq_phi_matrix(y_corner + j, x_corner + i);
                 n++;
             }
         }
     }
-
-    //std::cout << "PHI VECTOR\n" << phi_vec << "\n\n";
 
     // solve system Ax = b
 
@@ -374,10 +376,21 @@ double CartGrid::WeightedLeastSquaresMethod(size_t i, size_t j)
     //std::cout << "C\n" << C << "\n\n";
 
     Eigen::Vector4d gp_vec{ 1.0, ghost_pt_rel.x(), ghost_pt_rel.y(), ghost_pt_rel.x() * ghost_pt_rel.y() };
-    //std::cout << "GP VECTOR\n" << gp_vec << "\n\n";
 
     auto res = C.dot(gp_vec);
-    //std::cout << "GP RECONSTRUCTION\n" << res << "\n\n";
+
+#ifdef DEBUG_TERMINAL_WLSQ
+    std::cout << "IP\n" << image_point << "\n\n";
+    std::cout << "GP\n" << ghost_point << "\n\n";
+    std::cout << "BI\n" << boundary_intercept << "\n\n";
+    std::cout << "FLAG MATRIX\n" << grid_flags << "\n\n";
+    std::cout << "SELECTION\n" << selection << "\n\n";
+    std::cout << "VANDERMONDE\n" << vandermonde << "\n\n";
+    std::cout << "WEIGHTING MATRIX\n" << weighting_matrix << "\n\n";
+    std::cout << "PHI VECTOR\n" << phi_vec << "\n\n";
+    std::cout << "GP VECTOR\n" << gp_vec << "\n\n";
+    std::cout << "GP RECONSTRUCTION\n" << res << "\n\n";
+#endif
 
     return res;
 }
