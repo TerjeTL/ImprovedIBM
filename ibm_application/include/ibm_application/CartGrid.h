@@ -82,7 +82,8 @@ public:
 	double BilinearInterpolation(size_t i, size_t j);
 
 	void WLSQInit();
-	double WeightedLeastSquaresMethod(size_t i, size_t j);
+	void WLSQUpdateGeometry();
+	void WeightedLeastSquaresMethod();
 
 	const Eigen::MatrixXd& GetPhiMatrix() const
 	{
@@ -115,6 +116,11 @@ public:
 		return bilinear_interp_selection.at({ i, j });
 	}
 
+	double GetPhiWLSQ(int i, int j)
+	{
+		return m_wlsq_data.at({ i, j }).m_gp_val;
+	}
+
 	static constexpr double m_ip_stencil_length_factor = 2.0; // determines how far into the domain the stencil goes. Based on GP-to-boundary length.
 
 private:
@@ -144,7 +150,22 @@ private:
 	//#################################################################
 	// Holds copy of the data for the duration of setting the boundary
 	// conditions in order to not iteratively skew the method.
+	struct WLSQdata
+	{
+		double m_gp_val = 0.0;
+
+		int m_active_nodes_num = 0;
+		int m_x_corner = 0;
+		int m_y_corner = 0;
+		Eigen::MatrixXi m_subgrid;
+
+		Eigen::MatrixXd m_vandermonde;
+		Eigen::MatrixXd m_weight;
+		Eigen::MatrixXd m_M;
+	};
+
 	Eigen::MatrixXd m_wlsq_phi_matrix;
+	std::map<std::pair<int, int>, WLSQdata> m_wlsq_data;
 
 	// Debugging-oriented variables
 	std::map<std::pair<int, int>, std::array<Eigen::Vector2d, 4>> bilinear_interp_selection;

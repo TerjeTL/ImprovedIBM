@@ -23,8 +23,8 @@ bc_outer = h5read(FILE, "/geometry/Outer Circle/bc");
 
 %% Get Steady State Solution
 
-mesh_0 = load_steady_state_solution(FILE, "mesh_45", nan);
-mesh_1 = load_steady_state_solution(FILE, "mesh_89", nan);
+mesh_0 = load_steady_state_solution(FILE, "mesh_89", nan);
+mesh_1 = load_steady_state_solution(FILE, "mesh_177", nan);
 %mesh_1 = mesh_1(1:8:end, 1:8:end);
 
 r_1 = richardson_extrapolation(mesh_0, mesh_1);
@@ -36,7 +36,7 @@ analytical_mesh_1 = analytical_mesh(mesh_1, A, B, r_inner, r_outer, nan);
 %% Error Meshes
 error_0 = mesh_0 - analytical_mesh_0;
 error_1 = mesh_1 - analytical_mesh_1;
-error_r = abs(r_1 - analytical_mesh_0);
+error_r = r_1 - analytical_mesh_0;
 
 %% Plots
 tiledlayout(2,3)

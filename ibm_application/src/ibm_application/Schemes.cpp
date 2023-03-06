@@ -4,20 +4,20 @@
 
 #include <omp.h>
 
-//#define MT_ON
+#define MT_ON
 //#define DEBUG_TERMINAL_WLSQ
 
 void FTCS_Scheme::BoundaryCondition()
 {
-	// prepare wlsq for new step
-	m_mesh_grid->WLSQInit();
+	// Run WLSQ
+	m_mesh_grid->WeightedLeastSquaresMethod();
 
 	auto grid_extents = m_mesh_grid->GetMeshSize();
 	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
 
-	#ifdef MT_ON
-		#pragma omp parallel for num_threads(8)
-	#endif
+	//#ifdef MT_ON
+	//	#pragma omp parallel for num_threads(8)
+	//#endif
 	for (int j = 0; j < grid_extents.first; j++)
 	{
 		for (int i = 0; i < grid_extents.second; i++)
@@ -30,9 +30,6 @@ void FTCS_Scheme::BoundaryCondition()
 
 			auto& ip_ref = m_mesh_grid->GetPhiImagePointMatrixRef();
 			ip_ref(j, i) = m_mesh_grid->BilinearInterpolation(i, j);
-
-			// Test the WLSQ function
-			double wlsq = m_mesh_grid->WeightedLeastSquaresMethod(i, j);
 
 			auto image_pt_loc_wrld = m_mesh_grid->GetImagePoint(i, j);
 			auto image_pt_loc_grid = m_mesh_grid->GetGridCoordinate(image_pt_loc_wrld);
@@ -49,7 +46,7 @@ void FTCS_Scheme::BoundaryCondition()
 			{
 				// GP = IP + (BI - IP)*len_factor
 				//phi(j, i) = ip_ref(j, i) + (m_mesh_grid->GetBoundaryPhi(i, j) - ip_ref(j, i)) * m_mesh_grid->m_ip_stencil_length_factor;
-				phi(j, i) = wlsq;
+				phi(j, i) = m_mesh_grid->GetPhiWLSQ(i, j);
 
 				break;
 			}
@@ -63,7 +60,6 @@ void FTCS_Scheme::BoundaryCondition()
 				break;
 			}
 
-			
 		}
 	}
 
