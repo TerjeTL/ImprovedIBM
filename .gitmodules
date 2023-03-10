@@ -16,3 +16,6 @@ branch = release-2.20.x
 [submodule "external/glm"]
 	path = external/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "external/implot"]
+	path = external/implot
+	url = https://github.com/epezent/implot

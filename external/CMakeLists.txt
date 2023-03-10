@@ -32,6 +32,7 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/external/SDL")
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/SDL_ttf")
 
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/external/imgui)
+set(IMPLOT_DIR ${CMAKE_SOURCE_DIR}/external/implot)
 set(SDL_DIR ${CMAKE_SOURCE_DIR}/external/SDL)
 set(GLM_DIR ${CMAKE_SOURCE_DIR}/external/glm)
 set(GLAD_DIR ${CMAKE_SOURCE_DIR}/external/glad)
@@ -45,6 +46,10 @@ target_sources( imgui
                     ${IMGUI_DIR}/imgui_widgets.cpp
                     ${IMGUI_DIR}/imgui.cpp
 
+                    ${IMPLOT_DIR}/implot.cpp
+                    ${IMPLOT_DIR}/implot_items.cpp
+                    ${IMPLOT_DIR}/implot_demo.cpp
+
                 PRIVATE
                     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
                     ${IMGUI_DIR}/backends/imgui_impl_sdl2.cpp
@@ -53,6 +58,7 @@ target_sources( imgui
 target_include_directories( imgui
 							PUBLIC ${IMGUI_DIR}
 							PUBLIC ${IMGUI_DIR}/backends
+							PUBLIC ${IMPLOT_DIR}
 							PUBLIC ${SDL_DIR}/include
 							PUBLIC ${GLM_DIR}/glm
 )

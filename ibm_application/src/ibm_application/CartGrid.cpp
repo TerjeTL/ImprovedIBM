@@ -3,7 +3,8 @@
 
 #include "ibm_application/CartGrid.h"
 
-#include <Eigen/Dense>
+#include<Eigen/Core>
+#include<Eigen/SVD>
 
 #include <iostream>
 #include <assert.h>
@@ -250,6 +251,17 @@ void CartGrid::WLSQInit()
     WLSQUpdateGeometry();
 }
 
+// method for calculating the pseudo-Inverse as recommended by Eigen developers
+template<typename _Matrix_Type_>
+_Matrix_Type_ PseudoInverseSVD(const _Matrix_Type_& a, double epsilon = std::numeric_limits<double>::epsilon())
+{
+    //Eigen::JacobiSVD< _Matrix_Type_ > svd(a, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    // For a non-square matrix
+    Eigen::JacobiSVD< _Matrix_Type_ > svd(a ,Eigen::ComputeThinU | Eigen::ComputeThinV);
+    double tolerance = epsilon * std::max(a.cols(), a.rows()) * svd.singularValues().array().abs()(0);
+    return svd.matrixV() * (svd.singularValues().array().abs() > tolerance).select(svd.singularValues().array().inverse(), 0).matrix().asDiagonal() * svd.matrixU().adjoint();
+}
+
 double WeightingFunc(double x_n, double y_n, double a_d)
 {
     double d_n = std::sqrt(std::pow(x_n, 2.0) + std::pow(y_n, 2.0));
@@ -278,7 +290,7 @@ void CartGrid::WLSQUpdateGeometry()
         // Find the dimensions needed to grab the required number of points
         int c_x = ghost_point.x();
         int c_y = ghost_point.y();
-        const int required_nodes = 20;
+        const int required_nodes = 40;
         int selection_size = 0;
 
         while (wlsq.m_active_nodes_num < required_nodes)
@@ -299,7 +311,7 @@ void CartGrid::WLSQUpdateGeometry()
             selection_size++;
         }
 
-        // construct vandermonde matrix, starting with BI as first row, GP as second row
+        // construct vandermonde matrix, starting with GP as first row
         wlsq.m_vandermonde = Eigen::MatrixXd::Zero(wlsq.m_active_nodes_num + 1, 10);
 
         //vandermonde.row(0) = Eigen::Vector4d{ 1.0, 0.0, 0.0 };
@@ -367,10 +379,12 @@ void CartGrid::WLSQUpdateGeometry()
 
         wlsq.m_weight = weighting_coeffs.asDiagonal();
 
-        wlsq.m_M = (wlsq.m_weight * wlsq.m_vandermonde).completeOrthogonalDecomposition().pseudoInverse() * wlsq.m_weight;
+        Eigen::MatrixXd w_v_product = wlsq.m_weight * wlsq.m_vandermonde;
+        //wlsq.m_M = w_v_product.completeOrthogonalDecomposition().pseudoInverse() * wlsq.m_weight;
+
+        wlsq.m_M = PseudoInverseSVD(w_v_product) * wlsq.m_weight;
 	}
 
-    
 }
 
 void CartGrid::WeightedLeastSquaresMethod()

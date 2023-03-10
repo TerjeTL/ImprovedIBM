@@ -51,7 +51,7 @@ plot_0 = plot_mesh_surface(mesh_0);
 zlim([0 2]);
 
 nexttile
-error_plot_0 = plot_mesh_surface(error_1);
+error_plot_0 = plot_mesh_surface(error_0);
 
 % level 1
 nexttile
@@ -71,7 +71,7 @@ plot3(x,y,zeros(1,numel(x)))
 x=r_outer*cos(teta) + 0.5;
 y=r_outer*sin(teta) + 0.5;
 plot3(x,y,zeros(1,numel(x)))
-error_plot_1 = plot_mesh_surface(error_r);
+error_plot_1 = plot_mesh_surface(error_1);
 hold off
 %zlim([0 0.003]);
 
