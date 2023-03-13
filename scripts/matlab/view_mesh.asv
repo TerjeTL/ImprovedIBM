@@ -51,7 +51,7 @@ plot_0 = plot_mesh_surface(mesh_0);
 zlim([0 2]);
 
 nexttile
-error_plot_0 = plot_mesh_surface(error_1);
+error_plot_0 = plot_mesh_surface(error_0);
 
 % level 1
 nexttile
