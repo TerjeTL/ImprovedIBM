@@ -67,7 +67,7 @@ public:
 		return world_coordinate / h;
 	}
 
-	Eigen::Vector2d GetWorldCoordinate(Eigen::Vector2d grid_coordinate)
+	Eigen::Vector2d GetWorldCoordinate(Eigen::Vector2d grid_coordinate) const
 	{
 		return grid_coordinate * h;
 	}

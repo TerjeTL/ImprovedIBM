@@ -633,6 +633,14 @@ void DataViewer::RunDataViewer()
 
                 static float scale_min = 0.5f;
                 static float scale_max = 2.5f;
+
+                static bool auto_scaling = true;
+                if (auto_scaling)
+                {
+                    scale_min = m_solver->GetSolution(size)->m_mesh_grid->GetPhiMatrixRef().minCoeff();
+                    scale_max = m_solver->GetSolution(size)->m_mesh_grid->GetPhiMatrixRef().maxCoeff();
+                }
+
                 static const char* xlabels[] = { "C1","C2","C3","C4","C5","C6","C7" };
                 static const char* ylabels[] = { "R1","R2","R3","R4","R5","R6","R7" };
 
@@ -650,8 +658,11 @@ void DataViewer::RunDataViewer()
                 ImGui::SetNextItemWidth(standard_width);
                 ImGui::DragFloatRange2("##min_max", &scale_min, &scale_max, 0.01f, -20, 20, "Min %.3f", "Max %.3f");
 
-                static ImPlotHeatmapFlags hm_flags = 0;
 
+                ImGui::SetNextItemWidth(standard_width);
+                ImGui::Checkbox("Colorbar Autoscale", &auto_scaling);
+                ImGui::SameLine();
+                static ImPlotHeatmapFlags hm_flags = 0;
                 ImGui::CheckboxFlags("Column Major", (unsigned int*)&hm_flags, ImPlotHeatmapFlags_ColMajor);
 
                 static ImPlotAxisFlags axes_flags = ImPlotAxisFlags_Lock | ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks;

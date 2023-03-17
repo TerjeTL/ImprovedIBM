@@ -53,6 +53,7 @@ target_link_libraries(ibm_application
 	PRIVATE Eigen3::Eigen
 	PRIVATE hdf5_data_export
 	imgui
+	PRIVATE pybind11::embed
 )
 
 #print_all_variables()

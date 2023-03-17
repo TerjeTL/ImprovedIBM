@@ -30,6 +30,7 @@ endif()
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/SDL")
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/SDL_ttf")
+add_subdirectory("${CMAKE_SOURCE_DIR}/external/pybind11-2.10.4")
 
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/external/imgui)
 set(IMPLOT_DIR ${CMAKE_SOURCE_DIR}/external/implot)
