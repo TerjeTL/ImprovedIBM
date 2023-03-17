@@ -290,7 +290,7 @@ void CartGrid::WLSQUpdateGeometry()
         // Find the dimensions needed to grab the required number of points
         int c_x = ghost_point.x();
         int c_y = ghost_point.y();
-        const int required_nodes = 40;
+        const int required_nodes = 25;
         int selection_size = 0;
 
         while (wlsq.m_active_nodes_num < required_nodes)
@@ -357,7 +357,7 @@ void CartGrid::WLSQUpdateGeometry()
                 }
             }
         }
-        a_d = a_d / static_cast<double>(wlsq.m_active_nodes_num * 2);
+        //a_d = a_d / static_cast<double>(wlsq.m_active_nodes_num);
 
         weighting_coeffs[0] = WeightingFunc(ghost_pt_rel.x(), ghost_pt_rel.y(), a_d);
         //weighting_coeffs[1] = WeightingFunc(ghost_pt_rel.x(), ghost_pt_rel.y(), a_d);
@@ -384,7 +384,6 @@ void CartGrid::WLSQUpdateGeometry()
 
         wlsq.m_M = PseudoInverseSVD(w_v_product) * wlsq.m_weight;
 	}
-
 }
 
 void CartGrid::WeightedLeastSquaresMethod()
@@ -416,7 +415,6 @@ void CartGrid::WeightedLeastSquaresMethod()
         }
 
         // solve system Ax = b
-
         Eigen::VectorXd c_vec = wlsq.m_M * phi_vec;
 
         double test = 0.0;

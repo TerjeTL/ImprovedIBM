@@ -16,6 +16,7 @@
 #include <vector>
 #include "glm.hpp"
 #include "imgui_internal.h"
+#include "implot_internal.h"
 
 #include "Eigen/Eigen"
 
@@ -36,6 +37,12 @@ MessageCallback(GLenum source,
             (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""),
             type, severity, message);
 	}
+}
+
+template <typename T>
+inline T RandomRange(T min, T max) {
+    T scale = rand() / (T)RAND_MAX;
+    return min + scale * (max - min);
 }
 
 void DataViewer::DataViewerInitialize()
@@ -369,7 +376,6 @@ void DataViewer::RunDataViewer()
                 static char name_input[128] = "";
                 ImGui::InputTextWithHint("##no_text", default_name_str.c_str(), name_input, IM_ARRAYSIZE(name_input));
 
-
                 std::array<std::string, 2> normal_dir_str{ "Outward", "Inward" };
                 static bool normal_dir = 0;
                 const double  r_min = 0., r_max = 1.0;
@@ -466,7 +472,6 @@ void DataViewer::RunDataViewer()
                 ImGui::TableSetupColumn("Boundary Condition");
                 ImGui::TableSetupColumn("BC Value");
                 ImGui::TableHeadersRow();
-                
 
                 for (int row = 0; row < m_boundaries.size(); row++)
                 {
@@ -586,7 +591,7 @@ void DataViewer::RunDataViewer()
 
             // Simulation running logic
             const unsigned int  it_min = 0, it_max = 1000;
-            static unsigned int it_slider = 800;
+            static unsigned int it_slider = 100;
 
             ImGui::PushItemWidth(120);
             if (ImGui::Button("Run Simulation") && selected_simulation_run != 0)
@@ -613,9 +618,78 @@ void DataViewer::RunDataViewer()
         if (ImGui::Begin("CENTER"))
         {
             {
-                ImGui::BeginChild("ChildL", ImVec2(ImGui::GetContentRegionAvail().x * 0.25f, ImGui::GetContentRegionAvail().y), true, NULL);
-                for (int i = 0; i < 10; i++)
-                    ImGui::Text("%04d: scrollable region", i);
+                ImGui::BeginChild("ChildL", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, ImGui::GetContentRegionAvail().y), true, NULL);
+
+                static float values1[7][7] = { {0.8f, 2.4f, 2.5f, 3.9f, 0.0f, 4.0f, 0.0f},
+                                    {2.4f, 0.0f, 4.0f, 1.0f, 2.7f, 0.0f, 0.0f},
+                                    {1.1f, 2.4f, 0.8f, 4.3f, 1.9f, 4.4f, 0.0f},
+                                    {0.6f, 0.0f, 0.3f, 0.0f, 3.1f, 0.0f, 0.0f},
+                                    {0.7f, 1.7f, 0.6f, 2.6f, 2.2f, 6.2f, 0.0f},
+                                    {1.3f, 1.2f, 0.0f, 0.0f, 0.0f, 3.2f, 5.1f},
+                                    {0.1f, 2.0f, 0.0f, 1.4f, 0.0f, 1.9f, 6.3f} };
+
+                int size = models[selected_mat].m_size;
+                double* values = m_solver->GetSolution(size)->m_mesh_grid->GetPhiMatrixRef().data();
+
+                static float scale_min = 0.5f;
+                static float scale_max = 2.5f;
+                static const char* xlabels[] = { "C1","C2","C3","C4","C5","C6","C7" };
+                static const char* ylabels[] = { "R1","R2","R3","R4","R5","R6","R7" };
+
+                int standard_width = (ImGui::GetContentRegionAvail().x > 225) ? 225 : ImGui::GetContentRegionAvail().x;
+                static ImPlotColormap map = ImPlotColormap_Viridis;
+                if (ImPlot::ColormapButton(ImPlot::GetColormapName(map), ImVec2(ImGui::GetContentRegionAvail().x, 0), map)) {
+                    map = (map + 1) % ImPlot::GetColormapCount();
+                    // We bust the color cache of our plots so that item colors will
+                    // resample the new colormap in the event that they have already
+                    // been created. See documentation in implot.h.
+                    ImPlot::BustColorCache("##Heatmap1");
+                    ImPlot::BustColorCache("##Heatmap2");
+                }
+
+                ImGui::SetNextItemWidth(standard_width);
+                ImGui::DragFloatRange2("##min_max", &scale_min, &scale_max, 0.01f, -20, 20, "Min %.3f", "Max %.3f");
+
+                static ImPlotHeatmapFlags hm_flags = 0;
+
+                ImGui::CheckboxFlags("Column Major", (unsigned int*)&hm_flags, ImPlotHeatmapFlags_ColMajor);
+
+                static ImPlotAxisFlags axes_flags = ImPlotAxisFlags_Lock | ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks;
+
+                ImPlot::PushColormap(map);
+
+                double zoom = 0.0;
+                static int digits = 0;
+
+                int color_bar_width = 60;
+                int map_size = ImGui::GetContentRegionAvail().x - color_bar_width;
+                if (ImPlot::BeginPlot("##Heatmap1", ImVec2(map_size, map_size), ImPlotFlags_NoLegend | ImPlotFlags_NoMouseText)) {
+                    //ImPlot::SetupAxes(NULL, NULL, axes_flags, axes_flags);
+                    //ImPlot::SetupAxisTicks(ImAxis_X1, 0 + 1.0 / 14.0, 1 - 1.0 / 14.0, 7, xlabels);
+                    //ImPlot::SetupAxisTicks(ImAxis_Y1, 1 - 1.0 / 14.0, 0 + 1.0 / 14.0, 7, ylabels);
+                    //ImPlot::PlotHeatmap("heat", values1[0], 7, 7, scale_min, scale_max, "%g", ImPlotPoint(0, 0), ImPlotPoint(1, 1), hm_flags);
+
+                    ImPlot::SetupAxes(NULL, NULL, ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_NoDecorations);
+                    ImPlot::SetupAxesLimits(-1, 1, -1, 1);
+
+                    ImPlotContext& gp = *ImPlot::GetCurrentContext();
+                    zoom = gp.CurrentPlot->Axes->Range.Size();
+
+                    digits = std::clamp(static_cast<int>(0.372 * std::pow(zoom / (31.3248 * std::pow(size, -1.00715)), -1.554)), 0, 8);
+                    double treshold = 31.3248 * std::pow(size, -1.00715);
+                    std::string format = (treshold < zoom) ? "" : "%." + std::to_string(digits) + "f";
+
+                    ImPlot::PlotHeatmap("##heat1", values, size, size, scale_min, scale_max, format.c_str());
+
+                	ImPlot::EndPlot();
+                }
+                ImGui::SameLine();
+                ImPlot::ColormapScale("##HeatScale", scale_min, scale_max, ImVec2(color_bar_width, map_size));
+                
+                ImPlot::PopColormap();
+
+                ImGui::Text("%g", zoom);
+
                 ImGui::EndChild();
             }
 
@@ -675,15 +749,15 @@ void DataViewer::RunDataViewer()
 
             if (ImPlot::BeginPlot("Line Plots")) {
                 ImPlot::SetupAxes("time", "L2");
-
+                ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Log10);
                 //ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
                 for (const auto& [key, solution] : m_solver->GetSolutions())
                 {
                     auto dt = solution->m_dt;
-                    std::vector<double> t(solution->m_residuals.size());
+                    std::vector<double> t(solution->m_l2_norms.size());
                     std::generate(t.begin(), t.end(), [n = 0, &dt]() mutable { return dt * n++; });
 
-                    ImPlot::PlotLine(std::to_string(key).c_str(), t.data(), solution->m_residuals.data(), solution->m_residuals.size());
+                    ImPlot::PlotLine(std::to_string(key).c_str(), t.data(), solution->m_l2_norms.data(), solution->m_l2_norms.size());
                 }
                 
                 ImPlot::EndPlot();

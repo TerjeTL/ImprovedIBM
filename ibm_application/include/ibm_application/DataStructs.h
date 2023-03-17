@@ -20,17 +20,24 @@ struct Solution
 
 	void Update()
 	{
+		if (m_iteration == 0)
+		{
+			m_l2_norm_init = m_mesh_grid->GetPhiMatrix().squaredNorm() * m_mesh_grid->GetGridCellSize().x();
+		}
+
 		m_scheme->Update(m_dt, m_von_neumann_num);
+
+		m_l2_norm_prev = m_l2_norm;
 		m_l2_norm = m_mesh_grid->GetPhiMatrix().squaredNorm() * m_mesh_grid->GetGridCellSize().x();
 
 		if (m_iteration == 0)
 		{
-			m_l2_norm_init = m_l2_norm;
-			//m_residuals.push_back(1.0);
+			m_l2_norm_init = m_l2_norm / m_l2_norm_init;
+			m_l2_norms.push_back(m_l2_norm_init);
 		}
 		else // need to skip calculation of residual when m_l2_norm_init = 0
 		{
-			m_residuals.push_back(m_l2_norm / m_l2_norm_init);
+			m_l2_norms.push_back((m_l2_norm / m_l2_norm_prev) / m_l2_norm_init);
 		}
 
 		m_iteration++;
@@ -110,9 +117,10 @@ struct Solution
 	std::shared_ptr<Solution> fine_grid = nullptr;
 	unsigned int fine_grid_it_delta = 0; // need to update this for every n number of fine grid iterations 
 
+	double m_l2_norm_prev = 0.0;
 	double m_l2_norm = 0.0;
 	double m_l2_norm_init = 0.0;
-	std::vector<double> m_residuals{1.0};
+	std::vector<double> m_l2_norms;
 
 	//int m_stop_iteration = -1;
 	//bool converged = false;
