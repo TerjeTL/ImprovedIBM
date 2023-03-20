@@ -45,6 +45,97 @@ inline T RandomRange(T min, T max) {
     return min + scale * (max - min);
 }
 
+std::pair<double, double> AnalyticalSolutionCoeffs(const CartGrid& grid)
+{
+    auto it = 0;
+    double r_inner = 0.1;
+    double r_outer = 0.4;
+    double bc_inner = 2.0;
+    double bc_outer = 6.0;
+    for (const auto [key, boundary] : grid.GetImmersedBoundaries())
+    {
+        if (it == 0)
+        {
+            r_inner = boundary->GetSize();
+            r_outer = boundary->GetSize();
+        }
+        else
+        {
+            r_inner = std::min(r_inner, boundary->GetSize());
+            r_outer = std::max(r_outer, boundary->GetSize());
+        }
+        it++;
+    }
+
+    for (const auto [key, boundary] : grid.GetImmersedBoundaries())
+    {
+        if (r_inner == boundary->GetSize()) // dangerous?
+        {
+            bc_inner = boundary->GetBoundaryPhi();
+        }
+        if (r_outer == boundary->GetSize())
+        {
+            bc_outer = boundary->GetBoundaryPhi();
+        }
+    }
+
+    // phi = A log(r) + B 
+
+    auto a = (bc_inner - bc_outer) / (std::log(r_inner) - std::log(r_outer));
+    auto b = bc_inner - a*std::log(r_inner);
+
+    /*std::vector<double> xs(100);
+    std::vector<double> ys(100);
+    std::generate(xs.begin(), xs.end(), [n = 0]() mutable { return 0.01 * n++; });
+
+    for (size_t i = 0; i < xs.size(); i++)
+    {
+        ys[i] = a * std::log(xs[i]) + b;
+    }
+
+    if (ImGui::Begin("Some plot"))
+    {
+        ImPlot::BeginPlot("Line Plots");
+        ImPlot::SetupAxes("x", "y");
+        ImPlot::PlotLine("f(x)", xs.data(), ys.data(), xs.size());
+        ImPlot::EndPlot();
+        ImGui::End();
+    }*/
+
+    return { a, b };
+}
+
+Eigen::MatrixXd AnalyticalSolution(const CartGrid& grid)
+{
+    auto coeffs = AnalyticalSolutionCoeffs(grid);
+
+    Eigen::MatrixXd analytical_solution = Eigen::MatrixXd::Zero(grid.GetPhiMatrix().rows(), grid.GetPhiMatrix().cols());
+    //std::cout << "ANALYTICAL\n" << analytical_solution << "\n\n";
+
+    // phi = A log(r) + B 
+    for (size_t i = 0; i < grid.GetPhiMatrix().cols(); i++)
+    {
+        for (size_t j = 0; j < grid.GetPhiMatrix().rows(); j++)
+        {
+            if (grid.GetCellFlag(i, j) == 1)
+            {
+                
+            }
+            else
+            {
+                Eigen::Vector2d grid_coordinate{ i, j };
+
+                auto world_coordinate_r = grid.GetWorldCoordinate(grid_coordinate) - Eigen::Vector2d{ 0.5, 0.5 };
+                auto r = std::sqrt(std::pow(world_coordinate_r.x(), 2) + std::pow(world_coordinate_r.y(), 2));
+
+                analytical_solution(j, i) = coeffs.first * std::log(r) + coeffs.second;
+            }
+        }
+    }
+
+    return analytical_solution;
+}
+
 void DataViewer::DataViewerInitialize()
 {
     // set up references
@@ -629,16 +720,21 @@ void DataViewer::RunDataViewer()
                                     {0.1f, 2.0f, 0.0f, 1.4f, 0.0f, 1.9f, 6.3f} };
 
                 int size = models[selected_mat].m_size;
-                double* values = m_solver->GetSolution(size)->m_mesh_grid->GetPhiMatrixRef().data();
+                Eigen::MatrixXd analytical = AnalyticalSolution(*m_solver->GetSolution(size)->m_mesh_grid);
+                Eigen::MatrixXd error = m_solver->GetSolution(size)->m_mesh_grid->GetPhiMatrixRef() - analytical;
+                double* values = error.data();
+                //std::cout << "ERROR\n" << error << "\n\n";
 
-                static float scale_min = 0.5f;
-                static float scale_max = 2.5f;
+                //double* values = m_solver->GetSolution(size)->m_mesh_grid->GetPhiMatrixRef().data();
+
+                static float scale_min = -0.15f;
+                static float scale_max = 0.15f;
 
                 static bool auto_scaling = true;
                 if (auto_scaling)
                 {
-                    scale_min = m_solver->GetSolution(size)->m_mesh_grid->GetPhiMatrixRef().minCoeff();
-                    scale_max = m_solver->GetSolution(size)->m_mesh_grid->GetPhiMatrixRef().maxCoeff();
+                    scale_min = error.minCoeff();
+                    scale_max = error.maxCoeff();
                 }
 
                 static const char* xlabels[] = { "C1","C2","C3","C4","C5","C6","C7" };
@@ -655,8 +751,8 @@ void DataViewer::RunDataViewer()
                     ImPlot::BustColorCache("##Heatmap2");
                 }
 
-                ImGui::SetNextItemWidth(standard_width);
-                ImGui::DragFloatRange2("##min_max", &scale_min, &scale_max, 0.01f, -20, 20, "Min %.3f", "Max %.3f");
+                //ImGui::SetNextItemWidth(standard_width);
+                //ImGui::DragFloatRange2("##min_max", &scale_min, &scale_max, 0.01f, -20, 20, "Min %.3f", "Max %.3f");
 
 
                 ImGui::SetNextItemWidth(standard_width);

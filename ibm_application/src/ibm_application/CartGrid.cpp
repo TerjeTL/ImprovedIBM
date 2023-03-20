@@ -357,7 +357,7 @@ void CartGrid::WLSQUpdateGeometry()
                 }
             }
         }
-        //a_d = a_d / static_cast<double>(wlsq.m_active_nodes_num);
+        a_d = a_d / static_cast<double>(wlsq.m_active_nodes_num/4);
 
         weighting_coeffs[0] = WeightingFunc(ghost_pt_rel.x(), ghost_pt_rel.y(), a_d);
         //weighting_coeffs[1] = WeightingFunc(ghost_pt_rel.x(), ghost_pt_rel.y(), a_d);

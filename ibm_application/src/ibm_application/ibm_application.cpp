@@ -33,45 +33,6 @@ int EquivalentIterations(int refinement_level, int base_iterations)
 }
 
 
-std::pair<double, double> AnalyticalSolutionCoeffs()
-{
-    double r_inner = 0.1;
-    double r_outer = 0.8;
-    double bc_inner = 1.0;
-    double bc_outer = 2.0;
-
-    // phi = A log(r) + B 
-
-    auto ln_ro_over_ri = std::log(r_outer / r_inner);
-
-    auto b = (bc_inner * ln_ro_over_ri - bc_outer) / (1 + ln_ro_over_ri);
-    auto a = (bc_inner - b) / std::log(r_inner);
-
-    return { a, b };
-}
-
-Eigen::MatrixXd AnalyticalSolution(const CartGrid& grid)
-{
-    auto coeffs = AnalyticalSolutionCoeffs();
-    
-    Eigen::MatrixXd analytical_solution = Eigen::MatrixXd::Zero(grid.GetPhiMatrix().rows(), grid.GetPhiMatrix().cols());
-    // phi = A log(r) + B 
-    for (size_t i = 0; i < grid.GetPhiMatrix().cols(); i++)
-    {
-        for (size_t j = 0; j < grid.GetPhiMatrix().rows(); j++)
-        {
-            Eigen::Vector2d grid_coordinate{ i, j };
-
-            auto world_coordinate_r = grid.GetWorldCoordinate(grid_coordinate) - Eigen::Vector2d{0.5, 0.5};
-            auto r = std::sqrt(std::pow(world_coordinate_r.x(), 2) + std::pow(world_coordinate_r.y(), 2));
-            
-            analytical_solution(j, i) = coeffs.first * std::log(r) + coeffs.second;
-        }
-    }
-
-    return analytical_solution;
-}
-
 //namespace py = pybind11;
 
 int main(int argc, char* argv[])
