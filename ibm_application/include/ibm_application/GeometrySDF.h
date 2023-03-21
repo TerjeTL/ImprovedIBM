@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 
 //#include "ibm_application/SDLGraphics.h"
-#include "SDL.h"
+//#include "SDL.h"
 
 class SDLGraphics;
 
@@ -15,6 +15,8 @@ enum class BoundaryCondition {
 class GeometrySDF
 {
 public:
+	std::string name_id = "";
+
 	GeometrySDF();
 	GeometrySDF(double pos_x, double pos_y, double boundary_phi, bool inverse_sign = false);
 	~GeometrySDF() = default;
@@ -25,7 +27,7 @@ public:
 		m_boundary_condition = boundary_condition;
 	}
 	virtual double SignedDistanceFunction(double sample_x, double sample_y) const { return 0.0; };
-	virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) {};
+	//virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) {};
 
 	Eigen::Vector2d GetPosition()
 	{
@@ -38,6 +40,7 @@ public:
 
 	virtual Eigen::Vector2d GetNormal(double sample_x, double sample_y) { return Eigen::Vector2d{}; };
 	virtual double GetBoundaryPhi() { return m_boundary_phi; };
+	virtual double GetSize() = 0;
 
 protected:
 	BoundaryCondition m_boundary_condition = BoundaryCondition::Dirichlet;
@@ -57,9 +60,13 @@ public:
 
 
 	virtual double SignedDistanceFunction(double sample_x, double sample_y) const override;
-	virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) override;
+	//virtual void RenderSDF(SDL_Renderer* renderer, SDLGraphics& graphics) override;
 
 	Eigen::Vector2d GetNormal(double sample_x, double sample_y) override;
+	double GetSize()
+	{
+		return m_radius;
+	}
 
 private:
 	double m_radius;

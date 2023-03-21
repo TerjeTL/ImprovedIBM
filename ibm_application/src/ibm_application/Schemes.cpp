@@ -1,17 +1,26 @@
 
 #include "ibm_application/Schemes.h"
+#include <iostream>
 
 #include <omp.h>
 
+#define MT_ON
+//#define DEBUG_TERMINAL_WLSQ
+
 void FTCS_Scheme::BoundaryCondition()
 {
+	// Run WLSQ
+	m_mesh_grid->WeightedLeastSquaresMethod();
+
 	auto grid_extents = m_mesh_grid->GetMeshSize();
 	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
 
-	#pragma omp parallel for num_threads(8)
-	for (int i = 0; i < grid_extents.first; i++)
+	//#ifdef MT_ON
+	//	#pragma omp parallel for num_threads(8)
+	//#endif
+	for (int j = 0; j < grid_extents.first; j++)
 	{
-		for (int j = 0; j < grid_extents.second; j++)
+		for (int i = 0; i < grid_extents.second; i++)
 		{
 			// skip if node is not a ghost point
 			if (m_mesh_grid->GetCellFlag(i, j) != 2)
@@ -20,37 +29,46 @@ void FTCS_Scheme::BoundaryCondition()
 			}
 
 			auto& ip_ref = m_mesh_grid->GetPhiImagePointMatrixRef();
-			ip_ref(i, j) = m_mesh_grid->BilinearInterpolation(i, j);
+			ip_ref(j, i) = m_mesh_grid->BilinearInterpolation(i, j);
 
-			auto image_pt_loc = m_mesh_grid->GetGridCoordinate(m_mesh_grid->GetImagePoint(i, j));
-			Eigen::Vector2d ghost_pt_loc{ i, j };
+			auto image_pt_loc_wrld = m_mesh_grid->GetImagePoint(i, j);
+			auto image_pt_loc_grid = m_mesh_grid->GetGridCoordinate(image_pt_loc_wrld);
+			Eigen::Vector2d ghost_pt_loc_grid{ i, j };
+			auto ghost_pt_loc_wrld = m_mesh_grid->GetWorldCoordinate(ghost_pt_loc_grid);
 
-			auto dl = std::abs((image_pt_loc - ghost_pt_loc).norm());
+			auto dr = image_pt_loc_wrld - ghost_pt_loc_wrld;
+
+			double dl = std::abs(dr.norm());
 			
 			switch (m_mesh_grid->GetBoundaryCondition(i, j))
 			{
 			case BoundaryCondition::Dirichlet:
 			{
-				// GP = 2*BI - IP
-				phi(i, j) = 2 * m_mesh_grid->GetBoundaryPhi(i, j) - ip_ref(i, j);
+				// GP = IP + (BI - IP)*len_factor
+				//phi(j, i) = ip_ref(j, i) + (m_mesh_grid->GetBoundaryPhi(i, j) - ip_ref(j, i)) * m_mesh_grid->m_ip_stencil_length_factor;
+				phi(j, i) = m_mesh_grid->GetPhiWLSQ(i, j);
+
 				break;
 			}
 			case BoundaryCondition::Neumann:
 			{
 				// GP = IP - dl * d/dn(phi)|BI
-				phi(i, j) = ip_ref(i, j) - dl * m_mesh_grid->GetBoundaryPhi(i, j);
+				phi(j, i) = ip_ref(j, i) - dl * m_mesh_grid->GetBoundaryPhi(i, j);
 				break;
 			}
 			default:
 				break;
 			}
 
-			
 		}
 	}
+
+#ifdef DEBUG_TERMINAL_WLSQ
+	std::cout << "PHI MATRIX\n" << m_mesh_grid->GetPhiMatrix() << "\n\n";
+#endif
 }
 
-void FTCS_Scheme::Update(double dt, double cfl)
+void FTCS_Scheme::Update(double dt, double r)
 {
 	BoundaryCondition();
 
@@ -60,10 +78,14 @@ void FTCS_Scheme::Update(double dt, double cfl)
 	
 	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
 
-	#pragma omp parallel for num_threads(8)
-	for (int i = 1; i < grid_extents.first-1; i++)
+	//std::cout << phi << "\n\n";
+
+	#ifdef MT_ON
+		#pragma omp parallel for num_threads(8)
+	#endif
+	for (int j = 1; j < grid_extents.first-1; j++)
 	{
-		for (int j = 1; j < grid_extents.second-1; j++)
+		for (int i = 1; i < grid_extents.second-1; i++)
 		{
 			// skip if node is a ghost point/inactive
 			if (m_mesh_grid->GetCellFlag(i,j) != 0)
@@ -71,8 +93,8 @@ void FTCS_Scheme::Update(double dt, double cfl)
 				continue;
 			}
 
-			phi(i, j) = phi_old(i, j) + 0.5 * cfl * (phi_old(i + 1, j) - 2 * phi_old(i, j) + phi_old(i - 1, j) 
-					+ phi_old(i, j + 1) - 2 * phi_old(i, j) + phi_old(i, j - 1));
+			phi(j, i) = phi_old(j, i) + 1.0 * r * (phi_old(j, i + 1) - 2 * phi_old(j, i) + phi_old(j, i - 1) 
+					+ phi_old(j + 1, i) - 2 * phi_old(j, i) + phi_old(j - 1, i));
 		}
 	}
 

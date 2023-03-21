@@ -1,7 +1,7 @@
 clc; clear; close all;
 addpath('./functions/');
 
-FILE = "../export_data.h5";
+FILE = "../export_data_high_res.h5";
 
 %% Get Geometric Params
 % radius, x, y, bc_phi
@@ -20,8 +20,8 @@ bc_outer = h5read(FILE, "/geometry/outer/bc");
     r_outer, bc_phi_outer, bc_outer);
 
 %% Get Steady State Solution
-boundary_value_mesh = h5read(FILE, "/solutions/mesh_1/steady_state/boundary_values");
-flags = h5read(FILE, "/solutions/mesh_0/steady_state/boundary_values");
+boundary_value_mesh = h5read(FILE, "/solutions/mesh_2/steady_state/boundary_values");
+flags = h5read(FILE, "/solutions/mesh_2/steady_state/boundary_values");
 
 [X, Y] = meshgrid_from_mesh(boundary_value_mesh);
 analytical = sqrt((X-0.5).^2 + (Y-0.5).^2);
@@ -30,7 +30,7 @@ analytical(boundary_value_mesh == 0) = 0;
 analytical(boundary_value_mesh > 1.5) = 0;
 
 
-mesh_1 = load_steady_state_solution(FILE, "mesh_3", nan);
+mesh_1 = load_steady_state_solution(FILE, "mesh_4", nan);
 
 
 [theta_sol, value_sol, rho_sol] = convert_to_array(boundary_value_mesh);
@@ -38,10 +38,57 @@ mesh_1 = load_steady_state_solution(FILE, "mesh_3", nan);
 
 error = value_sol - value_an;
 
+ax = gca;
+ax.FontSize = 24;
+
 yyaxis left
-plot(theta_sol, error)
+plot(theta_sol, error, 'LineWidth', 2)
+ylabel('error', 'FontSize', 28);
 yyaxis right
-plot(theta_sol, rho_an-r_inner)
+plot(theta_sol, rho_an-r_inner, 'LineWidth', 2)
+xlabel('\theta [deg]', 'FontSize', 28);
+ylabel('distance', 'FontSize', 28);
+
+set(gcf,'position', [0,0,1300,500])
+saveas(gcf,'ibm_boundary_error','svg')
+
+clf;
+
+% Normally distributed sample points:
+x = rho_an-r_inner;
+y = error;
+
+% Bin the data:
+pts = linspace(0, 0.02, 300);
+
+N = histcounts2(y(:), x(:), pts, pts);
+
+% Create Gaussian filter matrix:
+[xG, yG] = meshgrid(-10:10);
+sigma =3.5;
+g = exp(-xG.^2./(2.*sigma.^2)-yG.^2./(2.*sigma.^2));
+g = g./sum(g(:));
+
+% Plot scattered data (for comparison):
+%set(gca, 'XLim', pts([1 end]), 'YLim', pts([1 end]));
+
+% Plot heatmap:
+imagesc(pts, pts, conv2(N, g, 'same'));
+set(gca, 'YDir', 'normal');
+hold on;
+scatter(x, y, 60, 'rs', 'MarkerEdgeColor','red',...
+    'MarkerFaceColor',[1 .5 .5]);
+ax = gca;
+ax.FontSize = 24;
+xlabel('distance', 'FontSize', 28);
+ylabel('error', 'FontSize', 28);
+axis([0 0.02 0 0.006])
+pbaspect([3 1 1])
+set(gcf,'position', [0,0,1300,500])
+legend1 = legend('Datapoints', 'FontSize', 30);
+saveas(gcf,'ibm_boundary_error_density','svg')
+
+%scatter(rho_an-r_inner, error)
 
 %% Analytical Meshes
 analytical_mesh_0 = analytical_mesh(mesh_0, A, B, r_inner, r_outer, nan);
@@ -77,7 +124,7 @@ zlim([0 2.5]);
 
 nexttile
 error_plot_1 = plot_mesh_surface(error_1);
-%zlim([0 0.45]);
+%zlim([0 0.45]);2449,420
 
 set(gcf,'position',[get(0, 'Screensize')])
 

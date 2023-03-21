@@ -27,9 +27,9 @@ public:
 
 	LoggingConfig GetLoggingConfig() const { return m_logging_type; }
 
-	void SetDataRef(std::shared_ptr<std::map<size_t, Solution>> solutions)
+	void SetSolverRef(std::shared_ptr<Solver> solver)
 	{
-		m_solutions = solutions;
+		m_solver = solver;
 	}
 
 	void GenerateHeaderInfos()
@@ -63,24 +63,24 @@ public:
 
 	void AppendCurrentState()
 	{
-		for (auto const& [mesh_level, solution] : *m_solutions)
+		for (auto const& [mesh_level, solution] : m_solver->GetSolutions())
 		{
-			if (solution.converged)
-			{
-				continue;
-			}
+			//if (solution.converged)
+			//{
+			//	continue;
+			//}
 
-			std::string curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + time_dir + "/" + std::to_string(solution.m_time);
+			std::string curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + time_dir + "/" + std::to_string(solution->m_time);
 
 			// make a copy for now and store only active nodes
-			auto mat = solution.m_mesh_grid->GetPhiMatrix();
-			for (size_t i = 0; i < mat.rows(); i++)
+			auto mat = solution->m_mesh_grid->GetPhiMatrix();
+			for (size_t j = 0; j < mat.rows(); j++)
 			{
-				for (size_t j = 0; j < mat.cols(); j++)
+				for (size_t i = 0; i < mat.cols(); i++)
 				{
-					if (solution.m_mesh_grid->GetCellFlag(i, j) != 0)
+					if (solution->m_mesh_grid->GetCellFlag(i, j) != 0)
 					{
-						mat(i, j) = 0;
+						mat(j, i) = 0;
 					}
 				}
 			}
@@ -112,13 +112,13 @@ public:
 		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + time_dir + "/" + std::to_string(solution.m_time);
 		// make a copy for now and store only active nodes
 		auto mat = solution.m_mesh_grid->GetPhiMatrix();
-		for (size_t i = 0; i < mat.rows(); i++)
+		for (size_t j = 0; j < mat.rows(); j++)
 		{
-			for (size_t j = 0; j < mat.cols(); j++)
+			for (size_t i = 0; i < mat.cols(); i++)
 			{
 				if (solution.m_mesh_grid->GetCellFlag(i, j) != 0)
 				{
-					mat(i, j) = 0;
+					mat(j, i) = 0;
 				}
 			}
 		}
@@ -126,7 +126,7 @@ public:
 		H5Easy::dump(m_file, curr_dir, mat);
 
 		// 2-norm
-		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/euclidian_norm";
+		/*curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/euclidian_norm";
 		double data_value = 0.0;
 		if (solution.m_iteration == 1)
 		{
@@ -136,8 +136,16 @@ public:
 		{
 			data_value = solution.euclidian_norm;
 		}
-		H5Easy::dump(m_file, curr_dir, data_value, { logger_it });
+		H5Easy::dump(m_file, curr_dir, data_value, { logger_it });*/
 	
+	}
+
+	void WriteSteadyStateAll()
+	{
+		for (const auto& [size, solution] : m_solver->GetSolutions())
+		{
+			WriteSteadyState(*solution, size);
+		}
 	}
 
 	void WriteSteadyState(const Solution& solution, int mesh_level)
@@ -150,13 +158,13 @@ public:
 		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/steady_state/solution";
 		
 		auto mat = solution.m_mesh_grid->GetPhiMatrix();
-		for (size_t i = 0; i < mat.rows(); i++)
+		for (size_t j = 0; j < mat.rows(); j++)
 		{
-			for (size_t j = 0; j < mat.cols(); j++)
+			for (size_t i = 0; i < mat.cols(); i++)
 			{
 				if (solution.m_mesh_grid->GetCellFlag(i, j) != 0)
 				{
-					mat(i, j) = 0;
+					mat(j, i) = 0;
 				}
 			}
 		}
@@ -172,11 +180,10 @@ public:
 		curr_dir = root_dir + "/mesh_" + std::to_string(mesh_level) + "/steady_state/boundary_values";
 		
 		Eigen::MatrixXd boundary_phi = Eigen::MatrixXd::Zero(mat.rows(), mat.cols());
-		for (size_t i = 0; i < mat.rows(); i++)
+		for (size_t j = 0; j < mat.rows(); j++)
 		{
-			for (size_t j = 0; j < mat.cols(); j++)
+			for (size_t i = 0; i < mat.cols(); i++)
 			{
-				
 				if (solution.m_mesh_grid->GetCellFlag(i, j) == 2)
 				{
 					auto east = solution.m_mesh_grid->GetCellFlag(i + 1, j);
@@ -186,19 +193,19 @@ public:
 
 					if (east == 0)
 					{
-						boundary_phi(i + 1, j) = mat(i + 1, j);
+						boundary_phi(j, i + 1) = mat(j, i + 1);
 					}
 					if (west == 0)
 					{
-						boundary_phi(i - 1, j) = mat(i - 1, j);
+						boundary_phi(j, i - 1) = mat(j, i - 1);
 					}
 					if (north == 0)
 					{
-						boundary_phi(i, j + 1) = mat(i, j + 1);
+						boundary_phi(j + 1, i) = mat(j + 1, i);
 					}
 					if (south == 0)
 					{
-						boundary_phi(i, j - 1) = mat(i, j - 1);
+						boundary_phi(j - 1, i) = mat(j - 1, i);
 					}
 				}
 			}
@@ -213,7 +220,7 @@ public:
 	}
 private:
 	LoggingConfig m_logging_type;
-	std::shared_ptr<std::map<size_t, Solution>> m_solutions = nullptr;
+	std::shared_ptr<Solver> m_solver = nullptr;
 
 	std::string root_dir = "/solutions";
 	std::string time_dir = "/time_data";
