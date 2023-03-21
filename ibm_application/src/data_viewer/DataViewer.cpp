@@ -163,7 +163,7 @@ void DataViewer::DataViewerInitialize()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-    window = SDL_CreateWindow("Data Visualizer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+    window = SDL_CreateWindow("Data Visualizer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1800, 1000, window_flags); // 1280 x 720
 	gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
     gladLoadGL();
@@ -329,7 +329,7 @@ void DataViewer::RunDataViewer()
             ImGui::DockBuilderRemoveNode(dockspace_id);
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
-            ImGuiID dockspace_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.25f, nullptr, &dockspace_id);
+            ImGuiID dockspace_id_down = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Down, 0.3f, nullptr, &dockspace_id);
             ImGuiID dockspace_id_down_left = ImGui::DockBuilderSplitNode(dockspace_id_down, ImGuiDir_Left, 0.4f, nullptr, &dockspace_id_down);
             ImGuiID dockspace_id_left = ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Left, 0.3f, nullptr, &dockspace_id);
             
@@ -640,7 +640,7 @@ void DataViewer::RunDataViewer()
                     //if (!filter.PassFilter(item->Name))
                     //    continue;
 
-                    const bool item_is_selected = (selected_simulation_run == size);
+                    const bool item_is_selected = table_selection.contains(size);// (selected_simulation_run == size);
                     ImGui::PushID(size);
                     ImGui::TableNextRow(ImGuiTableRowFlags_None, 0.0f);
 
@@ -651,14 +651,24 @@ void DataViewer::RunDataViewer()
                     {
                         if (ImGui::GetIO().KeyCtrl)
                         {
-                            //if (item_is_selected)
-                            //    selection.find_erase_unsorted(size);
-                            //else
-                            //    selection.push_back(size);
+                            if (item_is_selected)
+                                table_selection.find_erase_unsorted(size);
+                            else
+                                table_selection.push_back(size);
                         }
                         else
                         {
+                            table_selection.clear();
+                            table_selection.push_back(size);
                             selected_simulation_run = size;
+
+                            for (int i = 0; i < models.size(); ++i)
+                            {
+	                            if (models[i].m_size == size)
+	                            {
+                                    selected_mat = i;
+	                            }
+                            }
                         }
                     }
                     
@@ -702,7 +712,32 @@ void DataViewer::RunDataViewer()
             {
                 m_run_simulation = false;
             }
-            
+
+            ImGui::SeparatorText("Richardson Extrapolation");
+
+            if (ImGui::Button("Create Group (Current Selection)"))
+            {
+                RichardsonExtrpGroup new_group{ m_solver };
+                for (const size_t size : table_selection)
+                {
+                    new_group.AddSolution(size);
+                }
+
+                m_re_group.push_back(new_group);
+            }
+
+            static unsigned int re_it_slider = 1;
+
+            ImGui::PushItemWidth(120);
+            if (ImGui::Button("Run RE Iteration") && !m_re_group.empty())
+            {
+                m_re_group[0].Update();
+            }
+            ImGui::SameLine(140);
+            ImGui::DragScalar("##re_iterations_slider", ImGuiDataType_U32, &re_it_slider, 0.2f, &it_min, &it_max, "n: %u");
+            ImGui::PopItemWidth();
+
+
             ImGui::End();
         }
 
@@ -733,8 +768,8 @@ void DataViewer::RunDataViewer()
                 static bool auto_scaling = true;
                 if (auto_scaling)
                 {
-                    scale_min = error.minCoeff();
-                    scale_max = error.maxCoeff();
+                    scale_min = std::max((float)error.minCoeff(), -std::numeric_limits<float>::max());
+                    scale_max = std::min((float)error.maxCoeff(), std::numeric_limits<float>::max());
                 }
 
                 static const char* xlabels[] = { "C1","C2","C3","C4","C5","C6","C7" };
@@ -751,8 +786,8 @@ void DataViewer::RunDataViewer()
                     ImPlot::BustColorCache("##Heatmap2");
                 }
 
-                //ImGui::SetNextItemWidth(standard_width);
-                //ImGui::DragFloatRange2("##min_max", &scale_min, &scale_max, 0.01f, -20, 20, "Min %.3f", "Max %.3f");
+                ImGui::SetNextItemWidth(standard_width);
+                ImGui::DragFloatRange2("##min_max", &scale_min, &scale_max, 0.0001f, -10, 10, "Min %.2g", "Max %.2g");
 
 
                 ImGui::SetNextItemWidth(standard_width);
@@ -768,7 +803,7 @@ void DataViewer::RunDataViewer()
                 double zoom = 0.0;
                 static int digits = 0;
 
-                int color_bar_width = 60;
+                int color_bar_width = 80;
                 int map_size = ImGui::GetContentRegionAvail().x - color_bar_width;
                 if (ImPlot::BeginPlot("##Heatmap1", ImVec2(map_size, map_size), ImPlotFlags_NoLegend | ImPlotFlags_NoMouseText)) {
                     //ImPlot::SetupAxes(NULL, NULL, axes_flags, axes_flags);
@@ -777,7 +812,7 @@ void DataViewer::RunDataViewer()
                     //ImPlot::PlotHeatmap("heat", values1[0], 7, 7, scale_min, scale_max, "%g", ImPlotPoint(0, 0), ImPlotPoint(1, 1), hm_flags);
 
                     ImPlot::SetupAxes(NULL, NULL, ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_NoDecorations);
-                    ImPlot::SetupAxesLimits(-1, 1, -1, 1);
+                    ImPlot::SetupAxesLimits(0, 1, 0, 1);
 
                     ImPlotContext& gp = *ImPlot::GetCurrentContext();
                     zoom = gp.CurrentPlot->Axes->Range.Size();
@@ -791,7 +826,7 @@ void DataViewer::RunDataViewer()
                 	ImPlot::EndPlot();
                 }
                 ImGui::SameLine();
-                ImPlot::ColormapScale("##HeatScale", scale_min, scale_max, ImVec2(color_bar_width, map_size));
+                ImPlot::ColormapScale("##HeatScale", scale_min, scale_max, ImVec2(color_bar_width, map_size), "%.0e");
                 
                 ImPlot::PopColormap();
 
@@ -846,6 +881,27 @@ void DataViewer::RunDataViewer()
 
         if (ImGui::Begin("DOWN"))
         {
+            if (ImPlot::BeginPlot("Weighting Function", ImVec2{ ImGui::GetContentRegionAvail().x/2, ImGui::GetContentRegionAvail().y })) {
+                ImPlot::SetupAxes("distance", "weight");
+                //ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
+
+                auto a_d = (selected_simulation_run != 0) ? m_solver->GetSolution(selected_simulation_run)->m_mesh_grid->m_a_d : 0.0;
+
+                std::vector<double> xs(100);
+                std::vector<double> ys(100);
+                std::generate(xs.begin(), xs.end(), [n = 0, &ys, a_d]() mutable
+                {
+                	auto x = 0.01 * n++;
+                    ys[n] = std::exp(-std::pow( x*100, 2.0 ) / a_d);
+
+	                return x;
+                });
+            	
+            	ImPlot::PlotLine("##no_labels", xs.data(), ys.data(), xs.size());
+
+                ImPlot::EndPlot();
+            }
+
             
             ImGui::End();
         }
@@ -854,7 +910,7 @@ void DataViewer::RunDataViewer()
         {
             ImPlot::ShowDemoWindow();
 
-            if (ImPlot::BeginPlot("Line Plots")) {
+            if (ImPlot::BeginPlot("Convergence", ImVec2{ ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y})) {
                 ImPlot::SetupAxes("time", "L2");
                 ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Log10);
                 //ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);

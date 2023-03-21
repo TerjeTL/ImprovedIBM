@@ -91,6 +91,23 @@ struct Solution
 		}
 	}
 
+	void CopyStateFromRefined()
+	{
+		if (fine_grid)
+		{
+			Eigen::MatrixXd& curr_grid_phi = m_mesh_grid->GetPhiMatrixRef();
+			const Eigen::MatrixXd& fine_grid_phi = fine_grid->m_mesh_grid->GetPhiMatrixRef();
+
+			for (size_t i = 0; i < curr_grid_phi.cols(); i++)
+			{
+				for (size_t j = 0; j < curr_grid_phi.rows(); j++)
+				{
+					curr_grid_phi(j, i) = fine_grid_phi(j * 2, i * 2);
+				}
+			}
+		}
+	}
+
 	void TaskFinishedPrintout()
 	{
 		std::ios oldState(nullptr);

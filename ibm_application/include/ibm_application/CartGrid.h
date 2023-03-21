@@ -123,6 +123,9 @@ public:
 
 	static constexpr double m_ip_stencil_length_factor = 2.0; // determines how far into the domain the stencil goes. Based on GP-to-boundary length.
 
+	double m_a_d = 0.0;
+	double m_weight_scaling = 1.0;
+
 private:
 	std::unordered_map<std::size_t, std::shared_ptr<GeometrySDF>> immersed_boundaries;
 
@@ -150,6 +153,7 @@ private:
 	//#################################################################
 	// Holds copy of the data for the duration of setting the boundary
 	// conditions in order to not iteratively skew the method.
+
 	struct WLSQdata
 	{
 		double m_gp_val = 0.0;
@@ -157,6 +161,7 @@ private:
 		int m_active_nodes_num = 0;
 		int m_x_corner = 0;
 		int m_y_corner = 0;
+
 		Eigen::MatrixXi m_subgrid;
 
 		Eigen::MatrixXd m_vandermonde;
