@@ -12,52 +12,49 @@
 class RichardsonExtrpGroup
 {
 public:
-	RichardsonExtrpGroup(std::shared_ptr<Solver> solver) : m_solver(solver) {};
+	RichardsonExtrpGroup(std::shared_ptr<Solver> solver, std::shared_ptr<Solution> fine_grid_solution) : m_solver(solver), m_fine_solution(fine_grid_solution)
+	{
+		size_t fine_grid_size = m_fine_solution->m_mesh_grid->GetMeshSize().first;
+
+		size_t grid_size_coarse = (fine_grid_size + 1) / 2;
+		double dt = fine_grid_solution->m_dt * 4.0;
+
+		std::shared_ptr<CartGrid> coarse_grid_mesh{ std::make_shared<CartGrid>(grid_size_coarse) };
+		auto h = coarse_grid_mesh->GetGridCellSize()(0);
+		auto von_neumann_num = 2.0 * m_solver->GetThermalConductivity() * dt / (h * h);
+
+		m_coarse_solution = std::make_shared<Solution>(m_fine_solution->m_time, dt, von_neumann_num, std::make_unique<FTCS_Scheme>(coarse_grid_mesh), std::move(coarse_grid_mesh));
+		m_fine_solution->richardson_grid = m_coarse_solution;
+
+		richardson_extrp = Eigen::MatrixXd::Zero(grid_size_coarse, grid_size_coarse);
+	}
 
 	void Update()
 	{
-		// Synchronize all solutions
-		/*for (auto it = richardson_extrp_group.rbegin(); it != richardson_extrp_group.rend(); ++it)
-		{
-			const size_t size = it->first;
-			m_solver->GetSolution(size)->CopyStateFromRefined();
-		}*/
-
-		auto solution = m_solver->GetSolution(richardson_extrp_group.begin()->first);
-		solution->CopyStateFromRefined();
-
-		// Update recursively starting from coarsest grid
-		m_solver->GetSolution(richardson_extrp_group.begin()->first)->RecursiveUpdateFromThis();
+		// Update recursively from fine grid
+		m_fine_solution->RecursiveUpdateFromThis();
 
 		//Perform RE
-		for (auto& [size, richardson_grid] : richardson_extrp_group)
-		{
-			if (size != richardson_extrp_group.rbegin()->first)
-			{
-				const Eigen::MatrixXd& curr_phi = m_solver->GetSolution(size)->m_mesh_grid->GetPhiMatrix();
-				const Eigen::MatrixXd& fine_phi = m_solver->GetSolution((size*2-1))->m_mesh_grid->GetPhiMatrix();
+		const Eigen::MatrixXd& coarse_phi = m_coarse_solution->m_mesh_grid->GetPhiMatrix();
+		const Eigen::MatrixXd& fine_phi = m_fine_solution->m_mesh_grid->GetPhiMatrix();
 
-				for (size_t i = 0; i < curr_phi.cols(); i++)
-				{
-					for (size_t j = 0; j < curr_phi.rows(); j++)
-					{
-						richardson_grid(j, i) = fine_phi(j * 2, i * 2) + (fine_phi(j * 2, i * 2) - curr_phi(j, i))/3.0;
-					}
-				}
+		for (size_t i = 0; i < coarse_phi.cols(); i++)
+		{
+			for (size_t j = 0; j < coarse_phi.rows(); j++)
+			{
+				richardson_extrp(j, i) = fine_phi(j * 2, i * 2) + (fine_phi(j * 2, i * 2) - coarse_phi(j, i))/3.0;
 			}
 		}
 	}
 
-	void AddSolution(size_t grid_size)
-	{
-		if (m_solver->GetSolutions().find(grid_size) != m_solver->GetSolutions().end())
-		{
-			richardson_extrp_group[grid_size] = Eigen::MatrixXd::Zero(grid_size, grid_size);
-		}
-	}
+	Eigen::MatrixXd GetRichardsonExtrapolation() const { return richardson_extrp; }
 
 	std::shared_ptr<Solver> m_solver;
-	std::map<size_t, Eigen::MatrixXd> richardson_extrp_group;
+
+	std::shared_ptr<Solution> m_fine_solution;
+	std::shared_ptr<Solution> m_coarse_solution;
+
+	Eigen::MatrixXd richardson_extrp;
 	ImColor color = ImColor{ 1, 0, 0 };
 private:
 };
@@ -71,7 +68,7 @@ public:
 
 	void RunDataViewer();
 
-	std::vector<RichardsonExtrpGroup> m_re_group;
+	std::map<size_t, RichardsonExtrpGroup> m_re_group;
 	std::shared_ptr<Solver> m_solver{std::make_shared<Solver>()};
 	DataExporter m_data_export{ std::filesystem::current_path().parent_path().parent_path() / "scripts/export_data.h5", DataExporter::LoggingConfig::Steady };
 	std::vector<SolutionModel> models;

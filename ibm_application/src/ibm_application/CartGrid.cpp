@@ -344,7 +344,7 @@ void CartGrid::WLSQUpdateGeometry()
         // Construct weighting matrix
         Eigen::VectorXd weighting_coeffs(wlsq.m_active_nodes_num + 1);
 
-        m_a_d = std::pow(ghost_pt_rel.x(), 2.0) + std::pow(ghost_pt_rel.y(), 2.0);
+        wlsq.m_a_d = std::pow(ghost_pt_rel.x(), 2.0) + std::pow(ghost_pt_rel.y(), 2.0);
         for (size_t i = 0; i < wlsq.m_subgrid.cols(); i++)
         {
             for (size_t j = 0; j < wlsq.m_subgrid.rows(); j++)
@@ -353,13 +353,18 @@ void CartGrid::WLSQUpdateGeometry()
                 {
                     Eigen::Vector2d selected_node_rel_loc = Eigen::Vector2d{ static_cast<double>(wlsq.m_x_corner + i), static_cast<double>(wlsq.m_y_corner + j) } - boundary_intercept;
 
-                    m_a_d += std::pow(selected_node_rel_loc.x(), 2.0) + std::pow(selected_node_rel_loc.y(), 2.0);
+                    wlsq.m_a_d += std::pow(selected_node_rel_loc.x(), 2.0) + std::pow(selected_node_rel_loc.y(), 2.0);
                 }
             }
         }
-        //wlsq.m_a_d = wlsq.m_a_d / static_cast<double>(wlsq.m_active_nodes_num * wlsq.m_weight_scaling);
+        wlsq.m_a_d = wlsq.m_a_d * m_weight_scaling; /// static_cast<double>(wlsq.m_active_nodes_num * wlsq.m_weight_scaling);
 
-        weighting_coeffs[0] = WeightingFunc(ghost_pt_rel.x(), ghost_pt_rel.y(), m_a_d);
+        wlsq.dist.clear();
+        wlsq.dist.reserve(wlsq.m_active_nodes_num);
+        wlsq.weight.clear();
+        wlsq.weight.reserve(wlsq.m_active_nodes_num);
+
+        weighting_coeffs[0] = WeightingFunc(ghost_pt_rel.x(), ghost_pt_rel.y(), wlsq.m_a_d);
         //weighting_coeffs[1] = WeightingFunc(ghost_pt_rel.x(), ghost_pt_rel.y(), a_d);
 
         int n = 1;
@@ -370,7 +375,11 @@ void CartGrid::WLSQUpdateGeometry()
                 if (wlsq.m_subgrid(j, i) == 0)
                 {
                     Eigen::Vector2d selected_node_rel_loc = Eigen::Vector2d{ static_cast<double>(wlsq.m_x_corner + i), static_cast<double>(wlsq.m_y_corner + j) } - boundary_intercept;
-                    weighting_coeffs[n] = WeightingFunc(selected_node_rel_loc.x(), selected_node_rel_loc.y(), m_a_d);
+                    weighting_coeffs[n] = WeightingFunc(selected_node_rel_loc.x(), selected_node_rel_loc.y(), wlsq.m_a_d);
+
+                    // debug
+                    wlsq.dist.push_back(std::sqrt(std::pow(selected_node_rel_loc.x(), 2.0) + std::pow(selected_node_rel_loc.y(), 2.0)));
+                    wlsq.weight.push_back(weighting_coeffs[n]);
 
                     n++;
                 }

@@ -717,21 +717,85 @@ void DataViewer::RunDataViewer()
 
             if (ImGui::Button("Create Group (Current Selection)"))
             {
-                RichardsonExtrpGroup new_group{ m_solver };
                 for (const size_t size : table_selection)
                 {
-                    new_group.AddSolution(size);
+                    m_re_group.try_emplace(size, m_solver, m_solver->GetSolution(selected_simulation_run));
                 }
-
-                m_re_group.push_back(new_group);
             }
+
+
+            if (ImGui::BeginTable("Solutions", 3, table_flags, { 0, 80 }))
+            {
+
+                // Display headers so we can inspect their interaction with borders.
+                // (Headers are not the main purpose of this section of the demo, so we are not elaborating on them too much. See other sections for details)
+
+                ImGui::TableSetupColumn("Size");
+                ImGui::TableSetupColumn("Iterations");
+                ImGui::TableSetupColumn("Time");
+                ImGui::TableHeadersRow();
+
+                for (const auto& [size, solution] : m_re_group)
+                {
+                    //if (!filter.PassFilter(item->Name))
+                    //    continue;
+
+                    const bool item_is_selected = table_selection.contains(size);// (selected_simulation_run == size);
+                    ImGui::PushID(size);
+                    ImGui::TableNextRow(ImGuiTableRowFlags_None, 0.0f);
+
+                    // For the demo purpose we can select among different type of items submitted in the first column
+                    ImGui::TableSetColumnIndex(0);
+                    std::string label = std::to_string(size) + " x " + std::to_string(size);
+                    if (ImGui::Selectable(label.c_str(), item_is_selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap, ImVec2(0, 0)))
+                    {
+                        if (ImGui::GetIO().KeyCtrl)
+                        {
+                            /*if (item_is_selected)
+                                table_selection.find_erase_unsorted(size);
+                            else
+                                table_selection.push_back(size);*/
+                        }
+                        else
+                        {
+                            table_selection.clear();
+                            table_selection.push_back(size);
+                            selected_simulation_run = size;
+
+                            for (int i = 0; i < models.size(); ++i)
+                            {
+                                if (models[i].m_size == size)
+                                {
+                                    selected_mat = i;
+                                }
+                            }
+                        }
+                    }
+
+
+                    //ImGui::TableNextRow();
+                    //ImGui::TableSetColumnIndex(0);
+                    //ImGui::Text("%zu x %zu", size, size);
+
+                    ImGui::TableSetColumnIndex(1);
+                    std::string text = std::to_string(solution.m_fine_solution->m_iteration);
+                    ImGui::Text(text.c_str());
+
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Text(std::to_string(solution.m_fine_solution->m_time).c_str());
+
+                    ImGui::PopID();
+                }
+                ImGui::EndTable();
+            }
+
 
             static unsigned int re_it_slider = 1;
 
             ImGui::PushItemWidth(120);
             if (ImGui::Button("Run RE Iteration") && !m_re_group.empty())
             {
-                m_re_group[0].Update();
+                m_re_group.at(selected_simulation_run).Update();
             }
             ImGui::SameLine(140);
             ImGui::DragScalar("##re_iterations_slider", ImGuiDataType_U32, &re_it_slider, 0.2f, &it_min, &it_max, "n: %u");
@@ -881,18 +945,55 @@ void DataViewer::RunDataViewer()
 
         if (ImGui::Begin("DOWN"))
         {
+            const double  scaling_min = 0.5, scaling_max = 1.5;
+            static double a_d_scaling = 1.0;
+
+            static unsigned int wlsq_idx = 0;
+            unsigned int size = 0;
+            double a_d = 0.0;
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x/2 * 0.75);
+            ImGui::DragScalar("##a_d_scaling", ImGuiDataType_Double, &a_d_scaling, 0.05f, &scaling_min, &scaling_max, "scaling factor: %g");
+            ImGui::SameLine();
+            if(ImGui::Button("Update") && selected_simulation_run != 0)
+            {
+                m_solver->GetSolution(selected_simulation_run)->m_mesh_grid->m_weight_scaling = a_d_scaling;
+                m_solver->GetSolution(selected_simulation_run)->m_mesh_grid->WLSQUpdateGeometry();
+            }
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x/2);
+            ImGui::DragScalar("##wlsq_gp_select", ImGuiDataType_U32, &wlsq_idx, 0.2f, 0, &size-1, "idx: %u");
+
             if (ImPlot::BeginPlot("Weighting Function", ImVec2{ ImGui::GetContentRegionAvail().x/2, ImGui::GetContentRegionAvail().y })) {
                 ImPlot::SetupAxes("distance", "weight");
                 //ImPlot::SetNextMarkerStyle(ImPlotMarker_Circle);
-
-                auto a_d = (selected_simulation_run != 0) ? m_solver->GetSolution(selected_simulation_run)->m_mesh_grid->m_a_d : 0.0;
-
-                std::vector<double> xs(100);
-                std::vector<double> ys(100);
-                std::generate(xs.begin(), xs.end(), [n = 0, &ys, a_d]() mutable
+                
+                if (selected_simulation_run != 0 )
                 {
-                	auto x = 0.01 * n++;
-                    ys[n] = std::exp(-std::pow( x*100, 2.0 ) / a_d);
+                    auto solution = m_solver->GetSolution(selected_simulation_run);
+                    if ( !solution->m_mesh_grid->GetWLSQdata().empty() )
+                    {
+                        auto& wlsq = solution->m_mesh_grid->GetWLSQdata();
+                        auto keys = solution->m_mesh_grid->GetGhostPoints();
+                        size = keys.size();
+
+                        wlsq_idx = std::clamp(wlsq_idx, (unsigned int)0, size-1);
+
+                        auto& selected_wlsq = wlsq.at(keys.at(wlsq_idx));
+ 
+                        a_d = selected_wlsq.m_a_d;
+
+                        ImPlot::PlotScatter("##active_points", selected_wlsq.dist.data(), selected_wlsq.weight.data(), selected_wlsq.dist.size());
+                    }
+                }
+
+                auto res = 1000;
+                std::vector<double> xs(res);
+                std::vector<double> ys(res);
+                std::generate(xs.begin(), xs.end(), [n = 0, &ys, a_d, res]() mutable
+                {
+                	auto x = 50.0/res * n++;
+                    ys[n] = std::exp(-std::pow( x, 2.0 ) / a_d);
 
 	                return x;
                 });
