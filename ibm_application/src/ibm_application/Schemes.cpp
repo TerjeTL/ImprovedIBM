@@ -15,9 +15,9 @@ void FTCS_Scheme::BoundaryCondition()
 	auto grid_extents = m_mesh_grid->GetMeshSize();
 	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
 
-	//#ifdef MT_ON
-	//	#pragma omp parallel for num_threads(8)
-	//#endif
+	#ifdef MT_ON
+		#pragma omp parallel for num_threads(8)
+	#endif
 	for (int j = 0; j < grid_extents.first; j++)
 	{
 		for (int i = 0; i < grid_extents.second; i++)

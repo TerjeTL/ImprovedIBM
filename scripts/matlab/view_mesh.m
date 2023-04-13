@@ -23,8 +23,8 @@ bc_outer = h5read(FILE, "/geometry/Outer Circle/bc");
 
 %% Get Steady State Solution
 
-mesh_0 = load_steady_state_solution(FILE, "mesh_177", nan);
-mesh_1 = load_steady_state_solution(FILE, "mesh_353", nan);
+mesh_0 = load_steady_state_solution(FILE, "mesh_89", nan);
+mesh_1 = load_steady_state_solution(FILE, "mesh_177", nan);
 %mesh_1 = mesh_1(1:8:end, 1:8:end);
 
 r_1 = richardson_extrapolation(mesh_0, mesh_1);
@@ -73,7 +73,7 @@ y=r_outer*sin(teta) + 0.5;
 plot3(x,y,zeros(1,numel(x)))
 error_plot_1 = plot_mesh_surface(error_1);
 hold off
-%zlim([0 0.003]);
+zlim([-3e-5 3e-5]);
 
 set(gcf,'position',[get(0, 'Screensize')])
 

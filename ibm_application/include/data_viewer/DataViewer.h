@@ -1,4 +1,5 @@
 //#define SDL_MAIN_HANDLED
+#pragma once
 #include <SDL.h>
 
 #include "data_viewer/SolutionModel.h"

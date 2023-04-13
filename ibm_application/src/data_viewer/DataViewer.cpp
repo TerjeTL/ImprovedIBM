@@ -778,7 +778,7 @@ void DataViewer::RunDataViewer()
                     //ImGui::Text("%zu x %zu", size, size);
 
                     ImGui::TableSetColumnIndex(1);
-                    std::string text = std::to_string(solution.m_fine_solution->m_iteration);
+                    std::string text = std::to_string(solution.m_coarse_solution->m_time);
                     ImGui::Text(text.c_str());
 
                     ImGui::TableSetColumnIndex(2);
@@ -796,6 +796,7 @@ void DataViewer::RunDataViewer()
             if (ImGui::Button("Run RE Iteration") && !m_re_group.empty())
             {
                 m_re_group.at(selected_simulation_run).Update();
+                m_data_export.WriteRichardsonExtrapolationData(m_re_group.at(selected_simulation_run), selected_simulation_run);
             }
             ImGui::SameLine(140);
             ImGui::DragScalar("##re_iterations_slider", ImGuiDataType_U32, &re_it_slider, 0.2f, &it_min, &it_max, "n: %u");
