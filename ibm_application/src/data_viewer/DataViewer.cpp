@@ -802,7 +802,6 @@ void DataViewer::RunDataViewer()
             ImGui::DragScalar("##re_iterations_slider", ImGuiDataType_U32, &re_it_slider, 0.2f, &it_min, &it_max, "n: %u");
             ImGui::PopItemWidth();
 
-
             ImGui::End();
         }
 

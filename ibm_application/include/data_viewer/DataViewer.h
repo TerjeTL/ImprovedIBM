@@ -33,7 +33,10 @@ public:
 	void Update()
 	{
 		// Update recursively from fine grid
-		m_fine_solution->RecursiveUpdateFromThis();
+		for (size_t i = 0; i < 4; i++)
+		{
+			m_fine_solution->RecursiveUpdateFromThis();
+		}
 
 		//Perform RE
 		const Eigen::MatrixXd& coarse_phi = m_coarse_solution->m_mesh_grid->GetPhiMatrix();

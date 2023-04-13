@@ -65,6 +65,10 @@ struct Solution
 		{
 			coarse_grid->RecursiveUpdate(this);
 		}
+		if (richardson_grid)
+		{
+			richardson_grid->RecursiveUpdate(this);
+		}
 	}
 
 	void RecursiveUpdate(Solution* from_solution, int recursive_level = 1)
