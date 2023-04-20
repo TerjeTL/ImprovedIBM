@@ -25,12 +25,14 @@ public:
 		auto von_neumann_num = 2.0 * m_solver->GetThermalConductivity() * dt / (h * h);
 
 		m_coarse_solution = std::make_shared<Solution>(m_fine_solution->m_time, dt, von_neumann_num, std::make_unique<FTCS_Scheme>(coarse_grid_mesh), std::move(coarse_grid_mesh));
+		m_coarse_solution->fine_grid = m_fine_solution;
 		m_fine_solution->richardson_grid = m_coarse_solution;
+
 
 		richardson_extrp = Eigen::MatrixXd::Zero(grid_size_coarse, grid_size_coarse);
 	}
 
-	void Update()
+	void UpdateRichardsonExtrp()
 	{
 		// Update recursively from fine grid
 		for (size_t i = 0; i < 4; i++)
@@ -38,9 +40,8 @@ public:
 			m_fine_solution->RecursiveUpdateFromThis();
 		}
 
-		//Perform RE
-		const Eigen::MatrixXd& coarse_phi = m_coarse_solution->m_mesh_grid->GetPhiMatrix();
 		const Eigen::MatrixXd& fine_phi = m_fine_solution->m_mesh_grid->GetPhiMatrix();
+		const Eigen::MatrixXd& coarse_phi = m_coarse_solution->m_mesh_grid->GetPhiMatrix();
 
 		for (size_t i = 0; i < coarse_phi.cols(); i++)
 		{

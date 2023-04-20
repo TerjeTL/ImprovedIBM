@@ -65,10 +65,6 @@ struct Solution
 		{
 			coarse_grid->RecursiveUpdate(this);
 		}
-		if (richardson_grid)
-		{
-			richardson_grid->RecursiveUpdate(this);
-		}
 	}
 
 	void RecursiveUpdate(Solution* from_solution, int recursive_level = 1)
@@ -117,6 +113,8 @@ struct Solution
 					curr_grid_phi(j, i) = fine_grid_phi(j * 2, i * 2);
 				}
 			}
+
+			std::cout << curr_grid_phi << "\n\n";
 		}
 	}
 

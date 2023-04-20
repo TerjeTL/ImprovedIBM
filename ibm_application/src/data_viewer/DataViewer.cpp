@@ -163,7 +163,7 @@ void DataViewer::DataViewerInitialize()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-    window = SDL_CreateWindow("Data Visualizer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1800, 1000, window_flags); // 1280 x 720
+    window = SDL_CreateWindow("Data Visualizer", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags); // 1280 x 720
 	gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
     gladLoadGL();
@@ -797,7 +797,8 @@ void DataViewer::RunDataViewer()
             ImGui::PushItemWidth(120);
             if (ImGui::Button("Run RE Iteration") && !m_re_group.empty())
             {
-                m_re_group.at(selected_simulation_run).Update();
+                auto& group = m_re_group.at(selected_simulation_run);
+                group.UpdateRichardsonExtrp();
                 m_data_export.WriteRichardsonExtrapolationData(m_re_group.at(selected_simulation_run), selected_simulation_run);
             }
             ImGui::SameLine(140);
