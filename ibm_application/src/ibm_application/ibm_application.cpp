@@ -14,7 +14,12 @@
 #include <highfive/H5Easy.hpp>
 
 //#include <pybind11/embed.h>
+//namespace py = pybind11;
 
+/*py::scoped_interpreter guard{};
+
+    py::module_ sys = py::module_::import("sys");
+    py::print(sys.attr("path"));*/
 
 const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", "\n");
 
@@ -104,7 +109,7 @@ int main(int argc, char* argv[])
             // Launch our SDLGraphics program
             data_viewer.DataViewerInitialize();
 
-            data_viewer.m_solver->AddSolution(0.0005, 12);
+            data_viewer.m_solver->AddSolution(0.00001, 12); // 0.0005
             SolutionModel view_model{};
             view_model.SetSolution(data_viewer.m_solver->GetSolution(12));
             view_model.InitData();
@@ -115,7 +120,7 @@ int main(int argc, char* argv[])
             std::shared_ptr<Circle2D_SDF> outer_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 2.0, true });
             outer_circle->name_id = "Outer Circle";
 
-            data_viewer.m_boundaries.push_back(inner_circle);
+            //data_viewer.m_boundaries.push_back(inner_circle);
             data_viewer.m_boundaries.push_back(outer_circle);
 
             //data_viewer.models.emplace_back(SolutionModel{});

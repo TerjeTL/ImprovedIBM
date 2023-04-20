@@ -216,6 +216,7 @@ public:
 		H5Easy::dump(m_file, curr_dir, boundary_phi);
 	}
 
+	void WriteAnalyticalTransientSolutions(size_t size, double r_outer);
 	void WriteRichardsonExtrapolationData(const RichardsonExtrpGroup& richardson_extrp, size_t size);
 
 	void AppendMatrixData(std::string dir, const Eigen::MatrixXd& mat)
@@ -230,6 +231,9 @@ private:
 
 	std::string root_dir = "/solutions";
 	std::string time_dir = "/time_data";
+
+	std::vector<std::string> transient_timesteps;
+	std::vector<std::string> transient_re_timelevels;
 
 	std::filesystem::path m_output_path;
 	H5Easy::File m_file;

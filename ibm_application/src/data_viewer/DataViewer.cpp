@@ -216,7 +216,6 @@ void DataViewer::DataViewerInitialize()
     //IM_ASSERT(font != NULL);
 }
 
-
 void DataViewer::RunDataViewer()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -313,6 +312,8 @@ void DataViewer::RunDataViewer()
                             m_data_export.WriteGeometry(boundary->name_id, *dynamic_cast<Circle2D_SDF*>(boundary.get()), boundary->GetSize());
                         }
                         m_data_export.WriteSteadyStateAll();
+
+                        m_data_export.WriteAnalyticalTransientSolutions(m_solver->GetSolutions().rbegin()->first, m_boundaries.back()->GetSize());
 	                }
                 }
                 ImGui::Separator();
@@ -791,6 +792,7 @@ void DataViewer::RunDataViewer()
 
 
             static unsigned int re_it_slider = 1;
+            static int re_it = 0;
 
             ImGui::PushItemWidth(120);
             if (ImGui::Button("Run RE Iteration") && !m_re_group.empty())
