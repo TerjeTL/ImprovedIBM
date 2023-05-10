@@ -78,9 +78,10 @@ int main(int argc, char* argv[])
     {
         std::cout << "--- Immersed Boundary Method Program ---\n"
             << "Run options:\n"
-            << "1. Grid Visualization (SDL)\n"
-            << "2. Run Default Configuration\n"
-            << "3. Save Data\n"
+            << "1. Steady State Problem (Dirichlet)\n"
+            << "2. Steady State Problem (Neumann)\n"
+            << "3. Unsteady Problem\n"
+            << "4. Save Data\n"
             << std::endl;
 
         std::string input;
@@ -101,7 +102,78 @@ int main(int argc, char* argv[])
         case 1:
         {
             // Prepare an SDLGraphics instance
-            DataViewer data_viewer;
+            DataViewer data_viewer{SimulationCase::SteadyState};
+
+            //data_viewer.grids.push_back(grid_0);
+            //data_viewer.grids.push_back(grid_1);
+
+            // Launch our SDLGraphics program
+            data_viewer.DataViewerInitialize();
+
+            data_viewer.m_solver->AddSolution(0.001, 12); // 0.0005
+            SolutionModel view_model{};
+            view_model.SetSolution(data_viewer.m_solver->GetSolution(12));
+            view_model.InitData();
+            data_viewer.models.push_back(view_model);
+
+            std::shared_ptr<Circle2D_SDF> inner_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 1.0 });
+            inner_circle->name_id = "Inner Circle";
+
+            std::shared_ptr<Circle2D_SDF> outer_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 2.0, true });
+            outer_circle->name_id = "Outer Circle";
+
+            data_viewer.m_boundaries.push_back(inner_circle);
+            data_viewer.m_boundaries.push_back(outer_circle);
+
+            //data_viewer.models.emplace_back(SolutionModel{});
+            //data_viewer.models.emplace_back(SolutionModel{});
+
+            //data_viewer.models[0].AddIntegerDataTexture(grid_0->GetGridFlags());
+            //data_viewer.models[1].AddIntegerDataTexture(grid_1->GetGridFlags());
+
+            data_viewer.RunDataViewer();
+            break;
+        }
+        case 2:
+        {
+            // Prepare an SDLGraphics instance
+            DataViewer data_viewer{ SimulationCase::SteadyState };
+
+            //data_viewer.grids.push_back(grid_0);
+            //data_viewer.grids.push_back(grid_1);
+
+            // Launch our SDLGraphics program
+            data_viewer.DataViewerInitialize();
+
+            data_viewer.m_solver->AddSolution(0.001, 12); // 0.0005
+            SolutionModel view_model{};
+            view_model.SetSolution(data_viewer.m_solver->GetSolution(12));
+            view_model.InitData();
+            data_viewer.models.push_back(view_model);
+
+            std::shared_ptr<Circle2D_SDF> inner_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 1.0 });
+            inner_circle->SetBoundaryCondition(BoundaryCondition::Neumann);
+            inner_circle->name_id = "Inner Circle";
+
+            std::shared_ptr<Circle2D_SDF> outer_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 2.0, true });
+            outer_circle->name_id = "Outer Circle";
+
+            data_viewer.m_boundaries.push_back(inner_circle);
+            data_viewer.m_boundaries.push_back(outer_circle);
+
+            //data_viewer.models.emplace_back(SolutionModel{});
+            //data_viewer.models.emplace_back(SolutionModel{});
+
+            //data_viewer.models[0].AddIntegerDataTexture(grid_0->GetGridFlags());
+            //data_viewer.models[1].AddIntegerDataTexture(grid_1->GetGridFlags());
+
+            data_viewer.RunDataViewer();
+            break;
+        }
+        case 3:
+        {
+            // Prepare an SDLGraphics instance
+            DataViewer data_viewer{SimulationCase::Unsteady};
 
             //data_viewer.grids.push_back(grid_0);
             //data_viewer.grids.push_back(grid_1);
@@ -132,69 +204,7 @@ int main(int argc, char* argv[])
             data_viewer.RunDataViewer();
             break;
         }
-        case 2:
-        {
-            std::shared_ptr<Circle2D_SDF> inner_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.15, 1.0 });
-            //inner_circle->SetBoundaryCondition(BoundaryCondition::Neumann);
-            
-            std::shared_ptr<Circle2D_SDF> outer_circle = std::make_shared<Circle2D_SDF>(Circle2D_SDF{ 0.5, 0.5, 0.45, 2.0, true });
-
-            //data_export->WriteGeometry("inner", *inner_circle, 0.15);
-            //data_export->WriteGeometry("outer", *outer_circle, 0.45);
-
-            //grid_0->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            //grid_0->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            //grid_0->UpdateGrid();
-            //grid_0->InitializeField();
-
-            //grid_1->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            //grid_1->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            //grid_1->UpdateGrid();
-            //grid_1->InitializeField();
-
-            //grid_2->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            //grid_2->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            //grid_2->UpdateGrid();
-            //grid_2->InitializeField();
-
-            //grid_3->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            //grid_3->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            //grid_3->UpdateGrid();
-            //grid_3->InitializeField();
-
-            /*grid_4->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            grid_4->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            grid_4->UpdateGrid();
-            grid_4->InitializeField();*/
-
-            //grid_5->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            //grid_5->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            //grid_5->UpdateGrid();
-            //grid_5->InitializeField();
-            
-
-            /*grid_6->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            grid_6->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            grid_6->UpdateGrid();
-            grid_6->InitializeField();
-
-            grid_7->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            grid_7->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            grid_7->UpdateGrid();
-            grid_7->InitializeField();*/
-
-            //fine_4->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            //fine_4->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            //fine_4->UpdateGrid();
-
-            //fine_4->AddImmersedBoundary("Inner Cylinder", inner_circle);
-            //fine_4->AddImmersedBoundary("Outer Cylinder", outer_circle);
-            //fine_4->UpdateGrid();
-
-            //test_solver->PerformStep(-1);
-            break;
-        }
-        case 3:
+        case 4:
         {
             std::string filename = "phi_matrix.csv";
             

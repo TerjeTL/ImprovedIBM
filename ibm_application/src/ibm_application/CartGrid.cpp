@@ -71,10 +71,44 @@ void CartGrid::UpdateGrid()
 
 
 // Apply linear distribution to the initialization
+void CartGrid::InitializeFieldUnsteady(std::vector<double>& phi_analytical)
+{
+    assert(immersed_boundaries.size() == 1 && "Field initialization does not match case setup");
+
+    auto r_outer = immersed_boundaries.begin()->second->GetSize();
+    const Eigen::MatrixXi& grid_flags = GetGridFlags();
+    Eigen::MatrixXd analytical = Eigen::MatrixXd::Zero(grid_flags.rows(), grid_flags.cols());
+
+    for (int j = 0; j < grid_flags.rows(); ++j)
+    {
+        for (int i = 0; i < grid_flags.cols(); ++i)
+        {
+            auto coordinate = GetWorldCoordinate({ i, j });
+
+            if (grid_flags(j, i) == 0)
+            {
+                auto r = std::sqrt(std::pow(coordinate.x() - 0.5, 2) + std::pow(coordinate.y() - 0.5, 2));
+
+                auto dr = r_outer / (phi_analytical.size() - 1);
+                int idx_min = static_cast<int>(r / dr);
+
+                double phi_interp = std::lerp(phi_analytical[idx_min], phi_analytical[idx_min + 1], r - idx_min * dr);
+
+                analytical(j, i) = phi_interp * 2.0;
+            }
+        }
+    }
+
+    phi_matrix = analytical;
+}
+
+// Apply linear distribution to the initialization
 void CartGrid::InitializeField()
 {
     assert(immersed_boundaries.size() == 2 && "Can only do custom field initialization with exactly two immersed boundaries");
 
+
+    // Steady state case
     for (size_t j = 0UL; j < grid_flags.rows(); ++j) {
         for (size_t i = 0UL; i < grid_flags.cols(); ++i) {
 
@@ -427,14 +461,45 @@ void CartGrid::WeightedLeastSquaresMethod()
         Eigen::VectorXd c_vec = wlsq.m_M * phi_vec;
 
         double test = 0.0;
-        for (size_t n = 1; n < wlsq.m_M.cols(); n++)
+        if (GetBoundaryCondition(i, j) == BoundaryCondition::Dirichlet)
         {
-            Eigen::VectorXd pos = wlsq.m_vandermonde.row(n);
-            double phi_int = c_vec.dot(pos);
-            test += wlsq.m_M(0, n) * phi_int;
+            for (size_t n = 1; n < wlsq.m_M.cols(); n++)
+            {
+                Eigen::VectorXd pos = wlsq.m_vandermonde.row(n);
+                double phi_int = c_vec.dot(pos);
+                test += wlsq.m_M(0, n) * phi_int;
+            }
+
+            wlsq.m_gp_val = (immersed_boundaries.at(parent_sdf)->GetBoundaryPhi() - test) / wlsq.m_M(0, 0);
+        }
+        else if (GetBoundaryCondition(i, j) == BoundaryCondition::Neumann)
+        {
+            auto image_point = GetGridCoordinate(GetImagePoint(i, j));
+            Eigen::Vector2d ghost_point = { static_cast<double>(i), static_cast<double>(j) };
+
+            Eigen::Vector2d normal = (image_point - ghost_point).normalized();
+            auto n_x = normal.x();
+            auto n_y = normal.y();
+
+            //std::cout << "(i, j): " << i << ", " << j << "\n\n";
+            //std::cout << "normal: " << n_x << ", " << n_y << "\n\n";
+
+            for (size_t n = 1; n < wlsq.m_M.cols(); n++)
+            {
+                Eigen::VectorXd pos = wlsq.m_vandermonde.row(n);
+                double phi_int = c_vec.dot(pos);
+                test += (n_x * wlsq.m_M(1, n) + n_y * wlsq.m_M(2, n)) * phi_int;
+            }
+
+            //immersed_boundaries.at(parent_sdf)->GetNormal()
+
+            wlsq.m_gp_val = (immersed_boundaries.at(parent_sdf)->GetBoundaryPhi()/(double)(GetMeshSize().first - 1) - test) / (n_x * wlsq.m_M(1, 0) + n_y * wlsq.m_M(2, 0));
+            /*std::cout << "PHI VECTOR\n" << phi_vec << "\n\n";
+            std::cout << "M\n" << wlsq.m_M << "\n\n";
+            std::cout << "COEFFICIENT VEC\n" << c_vec << "\n\n";*/
         }
 
-        wlsq.m_gp_val = (immersed_boundaries.at(parent_sdf)->GetBoundaryPhi() - test) / wlsq.m_M(0, 0);
+        
         // A = V^T W V
         //auto A = vandermonde.transpose() * (weighting_matrix) * vandermonde;
         //std::cout << "A\n" << A << "\n\n";

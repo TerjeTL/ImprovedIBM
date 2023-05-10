@@ -2,13 +2,13 @@ import numpy as np
 import scipy.special as sp
 #import matplotlib.pyplot as plt
 
-def CalculateSolution(time, thermal_conductivity, r_outer):
+def CalculateSolution(time, r_loc, thermal_conductivity, r_outer):
     # plt.matplotlib.rc('text', usetex = True)
     # plt.matplotlib.rc('grid', linestyle = 'dotted')
     # plt.matplotlib.rc('figure', figsize = (6.4,4.8)) # (width,height) inches
 
     #time_arr = [0.005, 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8]
-    r = np.linspace(0, r_outer, 1000)
+    r = [r_loc]#np.linspace(0, r_outer, 1000)
 
     # Roots of the Bessel function
     roots = np.array(sp.jn_zeros(0, 100))
@@ -22,8 +22,7 @@ def CalculateSolution(time, thermal_conductivity, r_outer):
     div = J_1_arr * roots
     res = J_0_arr/div
 
-    #T = thermal_conductivity * time / r_outer**2
-    T = 2.0 * time / r_outer**2
+    T = thermal_conductivity * time / r_outer**2
 
     pre_sum = np.exp(-roots**2 * T) * res
     sum = np.sum(pre_sum, 1) * 2.0
@@ -51,4 +50,6 @@ def CalculateSolution(time, thermal_conductivity, r_outer):
     #np.savetxt('example-04.txt',list(zip(x,sp.jv(0,x),sp.jv(1,x),sp.jv(2,x),
     #sp.jv(3,x),sp.jv(4,x),sp.jv(5,x))), fmt="% .10e")
 
-    return result
+    return result.tolist()[0]*2
+
+phi = CalculateSolution(time, r_loc, thermal_conductivity, r_outer)

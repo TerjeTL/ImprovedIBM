@@ -33,6 +33,7 @@ public:
 	CartGrid(size_t nn, double phi_0 = 0.0);
 	~CartGrid() {};
 
+	void InitializeFieldUnsteady(std::vector<double>& phi_analytical);
 	void InitializeField();
 	void UpdateGrid();
 

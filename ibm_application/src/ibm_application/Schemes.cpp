@@ -4,7 +4,7 @@
 
 #include <omp.h>
 
-#define MT_ON
+//#define MT_ON
 //#define DEBUG_TERMINAL_WLSQ
 
 void FTCS_Scheme::BoundaryCondition()
@@ -44,16 +44,22 @@ void FTCS_Scheme::BoundaryCondition()
 			{
 			case BoundaryCondition::Dirichlet:
 			{
-				// GP = IP + (BI - IP)*len_factor
-				//phi(j, i) = ip_ref(j, i) + (m_mesh_grid->GetBoundaryPhi(i, j) - ip_ref(j, i)) * m_mesh_grid->m_ip_stencil_length_factor;
+				// WLSQ Method
 				phi(j, i) = m_mesh_grid->GetPhiWLSQ(i, j);
 
+				// Image Point Method
+				// GP = IP + (BI - IP)*len_factor
+				//phi(j, i) = ip_ref(j, i) + (m_mesh_grid->GetBoundaryPhi(i, j) - ip_ref(j, i)) * m_mesh_grid->m_ip_stencil_length_factor;
 				break;
 			}
 			case BoundaryCondition::Neumann:
 			{
+				// WLSQ Method
+				phi(j, i) = m_mesh_grid->GetPhiWLSQ(i, j);
+
+				// Image Point Method
 				// GP = IP - dl * d/dn(phi)|BI
-				phi(j, i) = ip_ref(j, i) - dl * m_mesh_grid->GetBoundaryPhi(i, j);
+				//phi(j, i) = ip_ref(j, i) - dl * m_mesh_grid->GetBoundaryPhi(i, j);
 				break;
 			}
 			default:

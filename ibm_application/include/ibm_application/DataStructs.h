@@ -47,7 +47,7 @@ struct Solution
 		{
 			if (m_iteration % 4 == 0)
 			{
-				richardson_grid->CopyStateFromRefined();
+				//richardson_grid->CopyStateFromRefined();
 				richardson_grid->Update();
 			}
 		}

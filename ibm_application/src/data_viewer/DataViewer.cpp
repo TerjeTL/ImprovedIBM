@@ -22,6 +22,16 @@
 
 #include "data_viewer/Mesh.h"
 
+#include <pybind11/embed.h>
+#include <pybind11/numpy.h>
+namespace py = pybind11;
+
+template<class T>
+std::vector<T>np_array_to_vec(py::array_t<T> py_array)
+{
+    return std::vector<T>(py_array.data(), py_array.data() + py_array.size());
+}
+
 void GLAPIENTRY
 MessageCallback(GLenum source,
     GLenum type,
@@ -52,6 +62,10 @@ std::pair<double, double> AnalyticalSolutionCoeffs(const CartGrid& grid)
     double r_outer = 0.4;
     double bc_inner = 2.0;
     double bc_outer = 6.0;
+
+    BoundaryCondition bc_type_inner;
+    BoundaryCondition bc_type_outer;
+
     for (const auto [key, boundary] : grid.GetImmersedBoundaries())
     {
         if (it == 0)
@@ -72,17 +86,35 @@ std::pair<double, double> AnalyticalSolutionCoeffs(const CartGrid& grid)
         if (r_inner == boundary->GetSize()) // dangerous?
         {
             bc_inner = boundary->GetBoundaryPhi();
+            bc_type_inner = boundary->GetBoundaryCondition();
         }
         if (r_outer == boundary->GetSize())
         {
             bc_outer = boundary->GetBoundaryPhi();
+            bc_type_outer = boundary->GetBoundaryCondition();
         }
     }
 
     // phi = A log(r) + B 
-
-    auto a = (bc_inner - bc_outer) / (std::log(r_inner) - std::log(r_outer));
-    auto b = bc_inner - a*std::log(r_inner);
+    auto a = 0.0;
+    auto b = 0.0;
+    if (bc_type_inner == BoundaryCondition::Dirichlet && bc_type_outer == BoundaryCondition::Dirichlet)
+    {
+        a = (bc_inner - bc_outer) / (std::log(r_inner) - std::log(r_outer));
+        b = bc_inner - a * std::log(r_inner);
+    }
+    else if (bc_type_inner == BoundaryCondition::Neumann && bc_type_outer == BoundaryCondition::Dirichlet)
+    {
+        a = bc_inner * r_inner;
+        b = bc_outer - a * std::log(r_outer);
+        //a = bc_outer * r_outer;
+        //b = bc_inner - a * std::log(r_inner);
+    }
+    else if (bc_type_inner == BoundaryCondition::Dirichlet && bc_type_outer == BoundaryCondition::Neumann)
+    {
+        a = bc_inner * r_inner;
+        b = bc_outer - a * std::log(r_outer);
+    }
 
     /*std::vector<double> xs(100);
     std::vector<double> ys(100);
@@ -313,7 +345,7 @@ void DataViewer::RunDataViewer()
                         }
                         m_data_export.WriteSteadyStateAll();
 
-                        m_data_export.WriteAnalyticalTransientSolutions(m_solver->GetSolutions().rbegin()->first, m_boundaries.back()->GetSize());
+                        //m_data_export.WriteAnalyticalTransientSolutions(m_solver->GetSolutions().rbegin()->first, m_boundaries.back()->GetSize());
 	                }
                 }
                 ImGui::Separator();
@@ -613,9 +645,33 @@ void DataViewer::RunDataViewer()
 
             if (ImGui::Button("Initialize"))
             {
-                for (auto& [size, solution] : m_solver->GetSolutions())
+	            if (selected_case == SimulationCase::SteadyState)
+	            {
+                    for (auto& [size, solution] : m_solver->GetSolutions())
+                    {
+                        solution->m_mesh_grid->InitializeField();
+                    }
+	            }
+                else if (selected_case == SimulationCase::Unsteady)
                 {
-                    solution->m_mesh_grid->InitializeField();
+                    py::scoped_interpreter guard{};
+
+                    py::function analytical_solution =
+                        py::reinterpret_borrow<py::function>(   // cast from 'object' to 'function - use `borrow` (copy) or `steal` (move)
+                            py::module::import("bessel_stuff").attr("CalculateSolution")  // import method "min_rosen" from python "module"
+                            );
+
+                    auto r_outer = m_solver->GetSolutions().begin()->second->m_mesh_grid->GetImmersedBoundaries().begin()->second->GetSize();
+                    auto initialize_time = m_solver->GetSolutions().begin()->second->m_time;
+                    py::array_t<double> result = analytical_solution(initialize_time, 1.0, r_outer);
+                    std::vector<double> phi = np_array_to_vec(result);
+
+                    analytical_solution.release();
+
+                    for (auto& [size, solution] : m_solver->GetSolutions())
+                    {
+                        solution->m_mesh_grid->InitializeFieldUnsteady(phi);
+                    }
                 }
             }
 

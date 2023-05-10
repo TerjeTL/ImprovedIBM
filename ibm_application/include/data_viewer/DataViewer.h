@@ -10,6 +10,12 @@
 #include "data_viewer/Camera.h"
 #include "ibm_application/Solver.h"
 
+enum class SimulationCase
+{
+	SteadyState,
+	Unsteady
+};
+
 class RichardsonExtrpGroup
 {
 public:
@@ -41,13 +47,67 @@ public:
 		}
 
 		const Eigen::MatrixXd& fine_phi = m_fine_solution->m_mesh_grid->GetPhiMatrix();
-		const Eigen::MatrixXd& coarse_phi = m_coarse_solution->m_mesh_grid->GetPhiMatrix();
+
+		const Eigen::MatrixXd& coarse_phi = m_fine_solution->coarse_grid->m_mesh_grid->GetPhiMatrix();
+		if (m_time_level_reset)
+		{
+			//coarse_phi = m_coarse_solution->m_mesh_grid->GetPhiMatrix();
+		}
 
 		for (size_t i = 0; i < coarse_phi.cols(); i++)
 		{
 			for (size_t j = 0; j < coarse_phi.rows(); j++)
 			{
-				richardson_extrp(j, i) = fine_phi(j * 2, i * 2) + (fine_phi(j * 2, i * 2) - coarse_phi(j, i))/3.0;
+				if (m_fine_solution->m_mesh_grid->GetCellFlag(i*2, j*2) == 0)
+				{
+					richardson_extrp(j, i) = fine_phi(j * 2, i * 2) + (fine_phi(j * 2, i * 2) - coarse_phi(j, i)) / 3.0;
+				}
+			}
+		}
+
+		richardson_extrp_fine = Eigen::MatrixXd::Zero(fine_phi.rows(), fine_phi.cols());
+		for (size_t i = 0; i < richardson_extrp_fine.cols(); i++)
+		{
+			for (size_t j = 0; j < richardson_extrp_fine.rows(); j++)
+			{
+				if (m_fine_solution->m_mesh_grid->GetCellFlag(i,j) == 0)
+				{
+					int i_coarse = i / 2;
+					int j_coarse = j / 2;
+					if ((i + 1) % 2 == 0 && j % 2 != 0 && m_fine_solution->m_mesh_grid->GetCellFlag(i + 1, j) == 0)
+					{ // even i + 1, odd j
+						double c1 = richardson_extrp(j_coarse, i_coarse) - fine_phi(j, i);
+						double c2 = richardson_extrp(j_coarse, i_coarse + 1) - fine_phi(j, i + 2);
+						double c = 1.0 / 2.0 * (c1 + c2);
+
+						richardson_extrp_fine(j, i + 1) = fine_phi(j, i + 1) + c;
+					}
+
+					if (i % 2 != 0 && (j + 1) % 2 == 0 && m_fine_solution->m_mesh_grid->GetCellFlag(i, j+1) == 0)
+					{ // even j + 1, odd i
+						double c1 = richardson_extrp(j_coarse, i_coarse) - fine_phi(j, i);
+						double c2 = richardson_extrp(j_coarse + 1, i_coarse) - fine_phi(j + 2, i);
+						double c = 1.0 / 2.0 * (c1 + c2);
+
+						richardson_extrp_fine(j + 1, i) = fine_phi(j + 1, i) + c;
+					}
+
+					if ((i + 1) % 2 == 0 && (j + 1) % 2 == 0 && m_fine_solution->m_mesh_grid->GetCellFlag(i+1, j+1) == 0)
+					{ // even j + 1, odd i
+						double c1 = richardson_extrp(j_coarse, i_coarse) - fine_phi(j, i);
+						double c2 = richardson_extrp(j_coarse, i_coarse + 1) - fine_phi(j, i + 2);
+						double c3 = richardson_extrp(j_coarse + 1, i_coarse) - fine_phi(j + 2, i);
+						double c4 = richardson_extrp(j_coarse + 1, i_coarse + 1) - fine_phi(j + 2, i + 2);
+						double c = 1.0 / 4.0 * (c1 + c2 + c3 + c4);
+
+						richardson_extrp_fine(j + 1, i + 1) = fine_phi(j + 1, i + 1) + c;
+					}
+
+					if (i % 2 != 0 && j % 2 != 0)
+					{
+						richardson_extrp_fine(j, i) = richardson_extrp(j_coarse, i_coarse);
+					}
+				}
 			}
 		}
 	}
@@ -60,14 +120,18 @@ public:
 	std::shared_ptr<Solution> m_coarse_solution;
 
 	Eigen::MatrixXd richardson_extrp;
+	Eigen::MatrixXd richardson_extrp_fine;
 	ImColor color = ImColor{ 1, 0, 0 };
+
+	bool m_time_level_reset = false;
 private:
+
 };
 
 class DataViewer
 {
 public:
-	DataViewer() : window_width( 800 ), window_height( 600 ) {}
+	DataViewer(SimulationCase case_setup) : selected_case(case_setup), window_width( 800 ), window_height( 600 ) {}
 	void DataViewerInitialize();
 	~DataViewer() = default;
 
@@ -79,6 +143,8 @@ public:
 	std::vector<SolutionModel> models;
 	std::vector<std::shared_ptr<GeometrySDF>> m_boundaries;
 private:
+	SimulationCase selected_case;
+
 	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 	SDL_Window* window;
 	SDL_GLContext gl_context;

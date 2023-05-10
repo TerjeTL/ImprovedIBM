@@ -9,18 +9,18 @@ namespace py = pybind11;
 
 void DataExporter::WriteRichardsonExtrapolationData(const RichardsonExtrpGroup& richardson_extrp, size_t size)
 {
-	std::string base_dir = root_dir + "/richardson_extrp" + "/transient" + "/group_size_" + std::to_string(size) + "/" + std::to_string(richardson_extrp.m_coarse_solution->m_time);
+	const auto coarse_solution = (richardson_extrp.m_time_level_reset) ? richardson_extrp.m_coarse_solution : richardson_extrp.m_fine_solution->coarse_grid;
+	std::string base_dir = root_dir + "/richardson_extrp" + "/transient" + "/group_size_" + std::to_string(size) + "/" + std::to_string(coarse_solution->m_time);
 
 	// Coarse solution
 	std::string curr_dir = base_dir + "/coarse";
 
-	const auto& coarse_solution = richardson_extrp.m_coarse_solution->m_mesh_grid;
-	auto mat = coarse_solution->GetPhiMatrix();
+	auto mat = coarse_solution->m_mesh_grid->GetPhiMatrix();
 	for (size_t j = 0; j < mat.rows(); j++)
 	{
 		for (size_t i = 0; i < mat.cols(); i++)
 		{
-			if (coarse_solution->GetCellFlag(i, j) != 0)
+			if (coarse_solution->m_mesh_grid->GetCellFlag(i, j) != 0)
 			{
 				mat(j, i) = 0;
 			}
@@ -50,8 +50,10 @@ void DataExporter::WriteRichardsonExtrapolationData(const RichardsonExtrpGroup& 
 	// Richardson extrapolation
 	curr_dir = base_dir + "/richardson_extrp";
 	H5Easy::dump(m_file, curr_dir, richardson_extrp.richardson_extrp);
+	curr_dir = base_dir + "/richardson_extrp_fine";
+	H5Easy::dump(m_file, curr_dir, richardson_extrp.richardson_extrp_fine);
 
-	transient_re_timelevels.push_back(std::to_string(richardson_extrp.m_coarse_solution->m_time));
+	transient_re_timelevels.push_back(std::to_string(coarse_solution->m_time));
 }
 
 template<class T>
@@ -63,10 +65,10 @@ std::vector<T>np_array_to_vec(py::array_t<T> py_array)
 void DataExporter::WriteAnalyticalTransientSolutions(size_t size, double r_outer)
 {
 	py::scoped_interpreter guard{};
-
+	
 	py::function analytical_solution =
 		py::reinterpret_borrow<py::function>(   // cast from 'object' to 'function - use `borrow` (copy) or `steal` (move)
-			py::module::import("bessel_stuff").attr("CalculateSolution")  // import method "min_rosen" from python "module"
+			py::module::import("bessel_stuff_export").attr("CalculateSolutionExport")  // import method "min_rosen" from python "module"
 			);
 
 	for (const auto& time : transient_re_timelevels)
