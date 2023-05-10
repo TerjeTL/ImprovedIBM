@@ -312,6 +312,10 @@ void CartGrid::WLSQUpdateGeometry()
         const int i = ij.first;
         const int j = ij.second;
 
+        size_t parent_sdf = ghost_point_parent_sdf(j, i);
+        Eigen::Vector2d world_loc = GetWorldCoordinate(Eigen::Vector2d{ i, j });
+        Eigen::Vector2d unit_normal = immersed_boundaries.at(parent_sdf)->GetNormal(world_loc.x(), world_loc.y());
+
         // get the selection of nodes
 
 		// start by getting center location of node selection square (god gave us no solution for the circle problem)
@@ -426,74 +430,66 @@ void CartGrid::WLSQUpdateGeometry()
         //wlsq.m_M = w_v_product.completeOrthogonalDecomposition().pseudoInverse() * wlsq.m_weight;
 
         wlsq.m_M = PseudoInverseSVD(w_v_product) * wlsq.m_weight;
-	}
-}
 
-void CartGrid::WeightedLeastSquaresMethod()
-{
-    m_wlsq_phi_matrix = phi_matrix;
+        // Initialize related vars
+        wlsq.phi_vec = Eigen::VectorXd::Zero(wlsq.m_active_nodes_num + 1);
+        wlsq.bc = GetBoundaryCondition(i, j);
+        wlsq.m_unit_normal = unit_normal;
 
-    for (auto& [ij, wlsq] : m_wlsq_data)
-    {
-        int i = ij.first;
-        int j = ij.second;
-
-        // construct phi vector
-        Eigen::VectorXd phi_vec(wlsq.m_active_nodes_num + 1);
-
-        size_t parent_sdf = ghost_point_parent_sdf(j, i);
-        phi_vec[0] = m_wlsq_phi_matrix(j, i);
-
-        int n = 1;
+        wlsq.m_numerical_stencil.clear();
+        wlsq.m_numerical_stencil.reserve(wlsq.m_active_nodes_num + 1);
+        wlsq.m_numerical_stencil.push_back({ i, j } );
         for (size_t i = 0; i < wlsq.m_subgrid.cols(); i++)
         {
             for (size_t j = 0; j < wlsq.m_subgrid.rows(); j++)
             {
                 if (wlsq.m_subgrid(j, i) == 0)
                 {
-                    phi_vec[n] = m_wlsq_phi_matrix(wlsq.m_y_corner + j, wlsq.m_x_corner + i);
-                    n++;
+                    wlsq.m_numerical_stencil.push_back({ wlsq.m_x_corner + i, wlsq.m_y_corner + j } );
                 }
             }
         }
+	}
+}
 
-        // solve system Ax = b
-        Eigen::VectorXd c_vec = wlsq.m_M * phi_vec;
+void CartGrid::WeightedLeastSquaresMethod()
+{
+    for (auto& [ij, wlsq] : m_wlsq_data)
+    {
+        int i = ij.first;
+        int j = ij.second;
+        size_t parent_sdf = ghost_point_parent_sdf(j, i);
 
-        double test = 0.0;
-        if (GetBoundaryCondition(i, j) == BoundaryCondition::Dirichlet)
+        int n = 0;
+		for (auto [i, j] : wlsq.m_numerical_stencil)
+		{
+            wlsq.phi_vec[n] = phi_matrix(j, i);
+            n++;
+		}
+
+        double linear_comb_sum = 0.0;
+        if (wlsq.bc == BoundaryCondition::Dirichlet)
         {
             for (size_t n = 1; n < wlsq.m_M.cols(); n++)
             {
-                Eigen::VectorXd pos = wlsq.m_vandermonde.row(n);
-                double phi_int = c_vec.dot(pos);
-                test += wlsq.m_M(0, n) * phi_int;
+                linear_comb_sum += wlsq.m_M(0, n) * wlsq.phi_vec(n);
             }
+            //double test_linear_comb_sum = wlsq.m_M(0, Eigen::seq(1, Eigen::placeholders::last)) * wlsq.phi_vec(Eigen::seq(1, Eigen::placeholders::last));
 
-            wlsq.m_gp_val = (immersed_boundaries.at(parent_sdf)->GetBoundaryPhi() - test) / wlsq.m_M(0, 0);
+            wlsq.m_gp_val = (immersed_boundaries.at(parent_sdf)->GetBoundaryPhi() - linear_comb_sum) / wlsq.m_M(0, 0);
         }
-        else if (GetBoundaryCondition(i, j) == BoundaryCondition::Neumann)
+        else if (wlsq.bc == BoundaryCondition::Neumann)
         {
-            auto image_point = GetGridCoordinate(GetImagePoint(i, j));
-            Eigen::Vector2d ghost_point = { static_cast<double>(i), static_cast<double>(j) };
-
-            Eigen::Vector2d normal = (image_point - ghost_point).normalized();
-            auto n_x = normal.x();
-            auto n_y = normal.y();
-
-            //std::cout << "(i, j): " << i << ", " << j << "\n\n";
-            //std::cout << "normal: " << n_x << ", " << n_y << "\n\n";
+            auto n_x = wlsq.m_unit_normal.x();
+            auto n_y = wlsq.m_unit_normal.y();
 
             for (size_t n = 1; n < wlsq.m_M.cols(); n++)
             {
-                Eigen::VectorXd pos = wlsq.m_vandermonde.row(n);
-                double phi_int = c_vec.dot(pos);
-                test += (n_x * wlsq.m_M(1, n) + n_y * wlsq.m_M(2, n)) * phi_int;
+                linear_comb_sum += (n_x * wlsq.m_M(1, n) + n_y * wlsq.m_M(2, n)) * wlsq.phi_vec(n);
             }
+            //double test_linear_comb_sum = (n_x * wlsq.m_M.row(1)(Eigen::seq(1, Eigen::placeholders::last)) + n_y * wlsq.m_M.row(2)(Eigen::seq(1, Eigen::placeholders::last))) * wlsq.phi_vec(Eigen::seq(1, Eigen::placeholders::last));
 
-            //immersed_boundaries.at(parent_sdf)->GetNormal()
-
-            wlsq.m_gp_val = (immersed_boundaries.at(parent_sdf)->GetBoundaryPhi()/(double)(GetMeshSize().first - 1) - test) / (n_x * wlsq.m_M(1, 0) + n_y * wlsq.m_M(2, 0));
+            wlsq.m_gp_val = (immersed_boundaries.at(parent_sdf)->GetBoundaryPhi()/(double)(GetMeshSize().first - 1) - linear_comb_sum) / (n_x * wlsq.m_M(1, 0) + n_y * wlsq.m_M(2, 0));
             /*std::cout << "PHI VECTOR\n" << phi_vec << "\n\n";
             std::cout << "M\n" << wlsq.m_M << "\n\n";
             std::cout << "COEFFICIENT VEC\n" << c_vec << "\n\n";*/

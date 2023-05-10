@@ -18,11 +18,17 @@ public:
 		int m_active_nodes_num = 0;
 		int m_x_corner = 0;
 		int m_y_corner = 0;
+		BoundaryCondition bc;
+
+		std::vector<std::pair<int, int>> m_numerical_stencil; // Warning: ordered
+
+		Eigen::Vector2d m_unit_normal;
 
 		Eigen::MatrixXi m_subgrid;
 
 		Eigen::MatrixXd m_vandermonde;
 		Eigen::MatrixXd m_weight;
+		Eigen::VectorXd phi_vec;
 		Eigen::MatrixXd m_M;
 
 		// debugging
