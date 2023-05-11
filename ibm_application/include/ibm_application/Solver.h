@@ -71,6 +71,8 @@ public:
 		return m_solutions.at(size_id);
 	}
 
+	double GetThermalConductivity() const { return m_alpha; }
+
 private:
 	std::map<size_t, std::shared_ptr<Solution>> m_solutions = std::map<size_t, std::shared_ptr<Solution>>();
 

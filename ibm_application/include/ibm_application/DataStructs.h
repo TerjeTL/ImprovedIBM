@@ -42,6 +42,15 @@ struct Solution
 
 		m_iteration++;
 		m_time += m_dt;
+
+		if (richardson_grid)
+		{
+			if (m_iteration % 4 == 0)
+			{
+				//richardson_grid->CopyStateFromRefined();
+				richardson_grid->Update();
+			}
+		}
 	}
 
 	void RecursiveUpdateFromThis()
@@ -60,7 +69,6 @@ struct Solution
 
 	void RecursiveUpdate(Solution* from_solution, int recursive_level = 1)
 	{
-
 		auto num_it = std::round(std::pow(4, recursive_level));
 
 		if (coarse_grid.get() == from_solution) // func called from coarse grid
@@ -105,6 +113,8 @@ struct Solution
 					curr_grid_phi(j, i) = fine_grid_phi(j * 2, i * 2);
 				}
 			}
+
+			std::cout << curr_grid_phi << "\n\n";
 		}
 	}
 
@@ -132,6 +142,7 @@ struct Solution
 
 	std::shared_ptr<Solution> coarse_grid = nullptr;
 	std::shared_ptr<Solution> fine_grid = nullptr;
+	std::shared_ptr<Solution> richardson_grid = nullptr;
 	unsigned int fine_grid_it_delta = 0; // need to update this for every n number of fine grid iterations 
 
 	double m_l2_norm_prev = 0.0;

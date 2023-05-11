@@ -28,8 +28,8 @@ mesh_1 = load_steady_state_solution(FILE, "mesh_23", 0);
 mesh_2 = load_steady_state_solution(FILE, "mesh_45", 0);
 mesh_3 = load_steady_state_solution(FILE, "mesh_89", 0);
 mesh_4 = load_steady_state_solution(FILE, "mesh_177", 0);
-%mesh_5 = load_steady_state_solution(FILE, "mesh_5", 0);
-%mesh_6 = load_steady_state_solution(FILE, "mesh_6", 0);
+%mesh_5 = load_steady_state_solution(FILE, "mesh_353", 0);
+%mesh_6 = load_steady_state_solution(FILE, "mesh_705", 0);
 %mesh_7 = load_steady_state_solution(FILE, "mesh_7", 0);
 fprintf(" OK\n")
 
@@ -188,9 +188,9 @@ third_order = 10.0*h.^(3.0);
 fourth_order = 100.0*h.^(4.0);
 
 hold on
-loglog(h, E, '-bo', 'MarkerSize', 10, 'LineWidth', 2);
+loglog(h(2:end), E(2:end)*0.1, '-bo', 'MarkerSize', 10, 'LineWidth', 2);
 %loglog(h, E_p);
-loglog(h(1:end-1), E_r, '-^', 'MarkerSize', 10, 'LineWidth', 2);
+loglog(h(2:end-1), E_r(2:end), '-^', 'MarkerSize', 10, 'LineWidth', 2);
 loglog(h, first_order, '-k');
 loglog(h, second_order, '--k');
 loglog(h, third_order, ':k');

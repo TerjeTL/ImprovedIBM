@@ -9,6 +9,8 @@
 #include <Eigen/Core>
 #include <highfive/H5Easy.hpp>
 
+class RichardsonExtrpGroup;
+
 class DataExporter
 {
 public:
@@ -21,7 +23,7 @@ public:
 	DataExporter(std::filesystem::path file_path, LoggingConfig logging_config)
 		:	m_output_path(file_path), m_file(H5Easy::File(m_output_path.string(), H5Easy::File::Overwrite)), m_logging_type(logging_config)
 	{
-
+		//H5Easy::Compression::Compression(0);
 	}
 	~DataExporter() = default;
 
@@ -214,6 +216,9 @@ public:
 		H5Easy::dump(m_file, curr_dir, boundary_phi);
 	}
 
+	void WriteAnalyticalTransientSolutions(size_t size, double r_outer);
+	void WriteRichardsonExtrapolationData(const RichardsonExtrpGroup& richardson_extrp, size_t size);
+
 	void AppendMatrixData(std::string dir, const Eigen::MatrixXd& mat)
 	{
 		H5Easy::dump(m_file, dir, mat);
@@ -222,8 +227,13 @@ private:
 	LoggingConfig m_logging_type;
 	std::shared_ptr<Solver> m_solver = nullptr;
 
+	int m_compression = 8;
+
 	std::string root_dir = "/solutions";
 	std::string time_dir = "/time_data";
+
+	std::vector<std::string> transient_timesteps;
+	std::vector<std::string> transient_re_timelevels;
 
 	std::filesystem::path m_output_path;
 	H5Easy::File m_file;

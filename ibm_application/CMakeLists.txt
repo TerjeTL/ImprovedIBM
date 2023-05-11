@@ -22,7 +22,7 @@ target_sources(ibm_application PRIVATE
 )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ibm_application PROPERTY CXX_STANDARD 17)
+  set_property(TARGET ibm_application PROPERTY CXX_STANDARD 20)
 endif()
 
 target_compile_definitions(ibm_application PRIVATE _USE_MATH_DEFINES)
