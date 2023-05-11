@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
             // Launch our SDLGraphics program
             data_viewer.DataViewerInitialize();
 
-            data_viewer.m_solver->AddSolution(0.001, 12); // 0.0005
+            data_viewer.m_solver->AddSolution(0.0001, 12); // 0.0005
             SolutionModel view_model{};
             view_model.SetSolution(data_viewer.m_solver->GetSolution(12));
             view_model.InitData();

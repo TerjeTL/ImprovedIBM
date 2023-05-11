@@ -188,9 +188,9 @@ third_order = 10.0*h.^(3.0);
 fourth_order = 100.0*h.^(4.0);
 
 hold on
-loglog(h(3:end), E(3:end), '-bo', 'MarkerSize', 10, 'LineWidth', 2);
+loglog(h(2:end), E(2:end)*0.1, '-bo', 'MarkerSize', 10, 'LineWidth', 2);
 %loglog(h, E_p);
-loglog(h(3:end-1), E_r(3:end), '-^', 'MarkerSize', 10, 'LineWidth', 2);
+loglog(h(2:end-1), E_r(2:end), '-^', 'MarkerSize', 10, 'LineWidth', 2);
 loglog(h, first_order, '-k');
 loglog(h, second_order, '--k');
 loglog(h, third_order, ':k');

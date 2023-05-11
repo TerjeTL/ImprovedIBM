@@ -13,14 +13,16 @@ class CartGrid
 public:
 	struct WLSQdata
 	{
+		Eigen::Vector2i ghost_point;
+
 		double m_gp_val = 0.0;
 		double m_a_d = 0.0;
 		int m_active_nodes_num = 0;
-		int m_x_corner = 0;
-		int m_y_corner = 0;
-		BoundaryCondition bc;
+		BoundaryCondition m_bc_type;
+		double m_bc_value = 0.0;
 
 		std::vector<std::pair<int, int>> m_numerical_stencil; // Warning: ordered
+		std::vector<Eigen::Vector2d> m_pos; // {(x', y')_GP, ..., (x', y')_q}
 
 		Eigen::Vector2d m_unit_normal;
 
@@ -28,8 +30,18 @@ public:
 
 		Eigen::MatrixXd m_vandermonde;
 		Eigen::MatrixXd m_weight;
-		Eigen::VectorXd phi_vec;
+		Eigen::VectorXd m_phi_vec;
+
 		Eigen::MatrixXd m_M;
+
+		// sliced arrays (update loop optimization)
+		std::vector<std::pair<int, int>> m_num_stencil_reduced;
+		Eigen::VectorXd m_phi_vec_reduced;
+		double m_M_den = 1.0; // pre-calculate denominator
+		double m_bc_term = 0.0; // pre-calculate boundary cond. term
+		Eigen::VectorXd m_M_0;
+		Eigen::VectorXd m_M_1;
+		Eigen::VectorXd m_M_2;
 
 		// debugging
 		std::vector<double> dist;
@@ -155,7 +167,7 @@ public:
 		return bilinear_interp_selection.at({ i, j });
 	}
 
-	double GetPhiWLSQ(int i, int j)
+	double GetPhiWLSQ(int i, int j) const
 	{
 		return m_wlsq_data.at({ i, j }).m_gp_val;
 	}
@@ -165,6 +177,8 @@ public:
 	double m_weight_scaling = 1.0;
 
 private:
+	void ConstructNumericalStencil(WLSQdata& data, size_t required_nodes);
+
 	std::unordered_map<std::size_t, std::shared_ptr<GeometrySDF>> immersed_boundaries;
 
 	double h = 0.0;

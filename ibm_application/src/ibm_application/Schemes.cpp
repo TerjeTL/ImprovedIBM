@@ -4,7 +4,7 @@
 
 #include <omp.h>
 
-//#define MT_ON
+#define MT_ON
 //#define DEBUG_TERMINAL_WLSQ
 
 void FTCS_Scheme::BoundaryCondition()
@@ -16,7 +16,7 @@ void FTCS_Scheme::BoundaryCondition()
 	Eigen::MatrixXd& phi = m_mesh_grid->GetPhiMatrixRef();
 
 	#ifdef MT_ON
-		#pragma omp parallel for num_threads(8)
+		#pragma omp parallel for num_threads(4)
 	#endif
 	for (int j = 0; j < grid_extents.first; j++)
 	{
@@ -89,7 +89,7 @@ void FTCS_Scheme::Update(double dt, double r)
 	//std::cout << phi << "\n\n";
 
 	#ifdef MT_ON
-		#pragma omp parallel for num_threads(8)
+		#pragma omp parallel for num_threads(4)
 	#endif
 	for (int j = 1; j < grid_extents.first-1; j++)
 	{

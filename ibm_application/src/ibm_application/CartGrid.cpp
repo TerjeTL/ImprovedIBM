@@ -285,15 +285,74 @@ void CartGrid::WLSQInit()
     WLSQUpdateGeometry();
 }
 
+void CartGrid::ConstructNumericalStencil(WLSQdata& data, size_t required_nodes)
+{
+    auto image_point = GetGridCoordinate(GetImagePoint(data.ghost_point.x(), data.ghost_point.y()));
+    Eigen::Vector2d boundary_intercept_grid_coord = data.ghost_point.cast<double>() + (image_point - data.ghost_point.cast<double>()) / 2.0;
+
+    // Find the dimensions needed to grab the required number of points
+    int c_x = (int)std::round(boundary_intercept_grid_coord.x());
+    int c_y = (int)std::round(boundary_intercept_grid_coord.y());
+
+    int selection_size = 0;
+
+    int x_corner = 0;
+    int y_corner = 0;
+
+    while (data.m_active_nodes_num < required_nodes)
+    {
+        // Define the size of the search area
+        auto size = std::round(std::pow(3.0 + 2.0 * selection_size, 2.0));
+        int delta_range = selection_size + 1;
+        int span = delta_range * 2 + 1;
+
+        x_corner = std::clamp(c_x - delta_range, 0, (int)grid_flags.cols() - span);
+        y_corner = std::clamp(c_y - delta_range, 0, (int)grid_flags.rows() - span);
+
+        // Get the subselection of nodes and check number of fluid points
+        data.m_subgrid = grid_flags.block(y_corner, x_corner, span, span);
+        //std::cout << selection << "\n\n";
+        data.m_active_nodes_num = (data.m_subgrid.array() == 0).count();
+
+        selection_size++;
+    }
+
+    auto body_intercpt_wrld = GetWorldCoordinate(boundary_intercept_grid_coord);
+    auto wrld_loc = GetWorldCoordinate( {data.ghost_point.x(), data.ghost_point.y() });
+
+    data.m_pos.clear();
+    data.m_pos.reserve(data.m_active_nodes_num + 1);
+    data.m_pos.push_back(wrld_loc - body_intercpt_wrld);
+
+    data.m_numerical_stencil.clear();
+    data.m_numerical_stencil.reserve(data.m_active_nodes_num + 1);
+    data.m_numerical_stencil.push_back({ data.ghost_point.x(), data.ghost_point.y() });
+
+    for (size_t i = 0; i < data.m_subgrid.cols(); i++) {
+        for (size_t j = 0; j < data.m_subgrid.rows(); j++) {
+            if (data.m_subgrid(j, i) == 0) {
+                auto wrld_pos = GetWorldCoordinate(Eigen::Vector2d{ static_cast<double>(x_corner + i), static_cast<double>(y_corner + j) });
+                auto wrld_pos_rel = wrld_pos - body_intercpt_wrld;
+
+                data.m_pos.push_back(wrld_pos_rel);
+                data.m_numerical_stencil.push_back({ x_corner + i, y_corner + j });
+            }
+        }
+    }
+}
+
 // method for calculating the pseudo-Inverse as recommended by Eigen developers
 template<typename _Matrix_Type_>
-_Matrix_Type_ PseudoInverseSVD(const _Matrix_Type_& a, double epsilon = std::numeric_limits<double>::epsilon())
+std::pair<_Matrix_Type_, double> PseudoInverseSVD(const _Matrix_Type_& a, double epsilon = std::numeric_limits<double>::epsilon())
 {
     //Eigen::JacobiSVD< _Matrix_Type_ > svd(a, Eigen::ComputeFullU | Eigen::ComputeFullV);
     // For a non-square matrix
     Eigen::JacobiSVD< _Matrix_Type_ > svd(a ,Eigen::ComputeThinU | Eigen::ComputeThinV);
     double tolerance = epsilon * std::max(a.cols(), a.rows()) * svd.singularValues().array().abs()(0);
-    return svd.matrixV() * (svd.singularValues().array().abs() > tolerance).select(svd.singularValues().array().inverse(), 0).matrix().asDiagonal() * svd.matrixU().adjoint();
+
+    double condition_number = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size() - 1);
+
+    return { svd.matrixV() * (svd.singularValues().array().abs() > tolerance).select(svd.singularValues().array().inverse(), 0).matrix().asDiagonal() * svd.matrixU().adjoint(), condition_number };
 }
 
 double WeightingFunc(double x_n, double y_n, double a_d)
@@ -305,12 +364,106 @@ double WeightingFunc(double x_n, double y_n, double a_d)
     return std::exp(-std::pow(d_n, 2.0) / a_d);
 }
 
+Eigen::MatrixXd ConstructVandermonde(int polynomial_order, CartGrid::WLSQdata& state, const std::vector<Eigen::Vector2d>& relative_positions)
+{
+    Eigen::MatrixXd vandermonde;
+
+	switch (polynomial_order)
+	{
+	case 1:
+	{
+		vandermonde = Eigen::MatrixXd::Zero(state.m_active_nodes_num + 1, 3);
+
+        for (int n = 0; n < relative_positions.size(); ++n)
+        {
+            const auto& rel_pos = relative_positions[n];
+
+            vandermonde.row(n) = Eigen::Vector<double, 3>{
+                        1.0, rel_pos.x(), rel_pos.y()
+            };
+        }
+    break;
+	}
+	case 2:
+    {
+        vandermonde = Eigen::MatrixXd::Zero(state.m_active_nodes_num + 1, 6);
+
+        for (int n = 0; n < relative_positions.size(); ++n)
+        {
+            const auto& rel_pos = relative_positions[n];
+
+            vandermonde.row(n) = Eigen::Vector<double, 6>{
+                        1.0, rel_pos.x(), rel_pos.y(), rel_pos.x() * rel_pos.y(),
+                        std::pow(rel_pos.x(), 2.0), std::pow(rel_pos.y(), 2.0)
+            };
+        }
+        break;
+    }
+    case 3:
+    {
+        vandermonde = Eigen::MatrixXd::Zero(state.m_active_nodes_num + 1, 10);
+
+        for (int n = 0; n < relative_positions.size(); ++n)
+        {
+            const auto& rel_pos = relative_positions[n];
+
+            vandermonde.row(n) = Eigen::Vector<double, 10>{
+                    1.0, rel_pos.x(), rel_pos.y(), rel_pos.x() * rel_pos.y(),
+                    std::pow(rel_pos.x(), 2.0), std::pow(rel_pos.y(), 2.0),
+                    std::pow(rel_pos.x(), 2.0) * rel_pos.y(), std::pow(rel_pos.y(), 2.0) * rel_pos.x(),
+                    std::pow(rel_pos.x(), 3.0), std::pow(rel_pos.y(), 3.0)
+            };
+        }
+        break;
+    }
+	default:
+        assert("Invalid Polynomial Order");
+	}
+
+    return vandermonde;
+}
+
+Eigen::MatrixXd ConstructWeightMatrix(double weight_scaling, CartGrid::WLSQdata& state, const std::vector<Eigen::Vector2d>& relative_positions)
+{
+    // Construct weighting matrix
+    Eigen::VectorXd weighting_coeffs(state.m_active_nodes_num + 1);
+
+    double a_d = 0.0;
+    for (auto& rel_pos : relative_positions)
+    {
+        a_d += std::pow(rel_pos.x(), 2.0) + std::pow(rel_pos.y(), 2.0);
+    }
+    a_d *= weight_scaling;
+
+    state.dist.clear();
+    state.dist.reserve(state.m_active_nodes_num);
+    state.weight.clear();
+    state.weight.reserve(state.m_active_nodes_num);
+
+    for (int n = 0; n < relative_positions.size(); ++n)
+    {
+        weighting_coeffs[n] = WeightingFunc(relative_positions[n].x(), relative_positions[n].y(), a_d);
+
+        if (n > 0)
+        {
+            state.dist.push_back(std::sqrt(std::pow(relative_positions[n].x(), 2.0) + std::pow(relative_positions[n].y(), 2.0)));
+            state.weight.push_back(weighting_coeffs[n]);
+        }
+    }
+
+    return weighting_coeffs.asDiagonal();
+}
+
 void CartGrid::WLSQUpdateGeometry()
 {
+    double cond_max = 0.0;
+
 	for (auto& [ij, wlsq] : m_wlsq_data)
 	{
         const int i = ij.first;
         const int j = ij.second;
+
+        wlsq.ghost_point = { i, j };
 
         size_t parent_sdf = ghost_point_parent_sdf(j, i);
         Eigen::Vector2d world_loc = GetWorldCoordinate(Eigen::Vector2d{ i, j });
@@ -319,211 +472,98 @@ void CartGrid::WLSQUpdateGeometry()
         // get the selection of nodes
 
 		// start by getting center location of node selection square (god gave us no solution for the circle problem)
-        auto image_point = GetGridCoordinate(GetImagePoint(i, j));
-        Eigen::Vector2d ghost_point = { static_cast<double>(i), static_cast<double>(j) };
-
-        auto boundary_intercept = ghost_point + (image_point - ghost_point) / 2.0;
-        auto ghost_pt_rel = ghost_point - boundary_intercept;
-
-        // Find the dimensions needed to grab the required number of points
-        int c_x = ghost_point.x();
-        int c_y = ghost_point.y();
         const int required_nodes = 25;
-        int selection_size = 0;
 
-        while (wlsq.m_active_nodes_num < required_nodes)
-        {
-            // Define the size of the search area
-            auto size = std::round(std::pow(3.0 + 2.0 * selection_size, 2.0));
-            int delta_range = selection_size + 1;
-            int span = delta_range * 2 + 1;
 
-            wlsq.m_x_corner = std::clamp(c_x - delta_range, 0, (int)grid_flags.cols() - span);
-            wlsq.m_y_corner = std::clamp(c_y - delta_range, 0, (int)grid_flags.rows() - span);
-
-            // Get the subselection of nodes and check number of fluid points
-            wlsq.m_subgrid = grid_flags.block(wlsq.m_y_corner, wlsq.m_x_corner, span, span);
-            //std::cout << selection << "\n\n";
-            wlsq.m_active_nodes_num = (wlsq.m_subgrid.array() == 0).count();
-
-            selection_size++;
-        }
+        ConstructNumericalStencil(wlsq, required_nodes);
 
         // construct vandermonde matrix, starting with GP as first row
-        wlsq.m_vandermonde = Eigen::MatrixXd::Zero(wlsq.m_active_nodes_num + 1, 10);
+        wlsq.m_vandermonde = ConstructVandermonde(3, wlsq, wlsq.m_pos);
 
-        //vandermonde.row(0) = Eigen::Vector4d{ 1.0, 0.0, 0.0 };
-        wlsq.m_vandermonde.row(0) = Eigen::Vector<double, 10>{
-            1.0, ghost_pt_rel.x(), ghost_pt_rel.y(), ghost_pt_rel.x() * ghost_pt_rel.y(),
-            std::pow(ghost_pt_rel.x(), 2.0), std::pow(ghost_pt_rel.y(), 2.0), std::pow(ghost_pt_rel.x(), 2.0) * ghost_pt_rel.y(), std::pow(ghost_pt_rel.y(), 2.0) * ghost_pt_rel.x(),
-            std::pow(ghost_pt_rel.x(), 3.0), std::pow(ghost_pt_rel.y(), 3.0)
-        };
-
-        // need to get x's and y's relative to the boundary intercept for each selected fluid node
-        int idx = 1;
-        for (size_t i = 0; i < wlsq.m_subgrid.cols(); i++)
-        {
-            for (size_t j = 0; j < wlsq.m_subgrid.rows(); j++)
-            {
-                if (wlsq.m_subgrid(j, i) == 0)
-                {
-                    Eigen::Vector2d selected_node_rel_loc = Eigen::Vector2d{ static_cast<double>(wlsq.m_x_corner + i), static_cast<double>(wlsq.m_y_corner + j) } - boundary_intercept;
-                    wlsq.m_vandermonde.row(idx) = Eigen::Vector<double, 10>{
-                        1.0, selected_node_rel_loc.x(), selected_node_rel_loc.y(), selected_node_rel_loc.x() * selected_node_rel_loc.y(),
-                        std::pow(selected_node_rel_loc.x(), 2.0), std::pow(selected_node_rel_loc.y(), 2.0), std::pow(selected_node_rel_loc.x(), 2.0) * selected_node_rel_loc.y(), std::pow(selected_node_rel_loc.y(), 2.0) * selected_node_rel_loc.x(),
-                        std::pow(selected_node_rel_loc.x(), 3.0), std::pow(selected_node_rel_loc.y(), 3.0)
-                    };
-
-                    idx++;
-                }
-            }
-        }
-
-        // Construct weighting matrix
-        Eigen::VectorXd weighting_coeffs(wlsq.m_active_nodes_num + 1);
-
-        wlsq.m_a_d = std::pow(ghost_pt_rel.x(), 2.0) + std::pow(ghost_pt_rel.y(), 2.0);
-        for (size_t i = 0; i < wlsq.m_subgrid.cols(); i++)
-        {
-            for (size_t j = 0; j < wlsq.m_subgrid.rows(); j++)
-            {
-                if (wlsq.m_subgrid(j, i) == 0)
-                {
-                    Eigen::Vector2d selected_node_rel_loc = Eigen::Vector2d{ static_cast<double>(wlsq.m_x_corner + i), static_cast<double>(wlsq.m_y_corner + j) } - boundary_intercept;
-
-                    wlsq.m_a_d += std::pow(selected_node_rel_loc.x(), 2.0) + std::pow(selected_node_rel_loc.y(), 2.0);
-                }
-            }
-        }
-        wlsq.m_a_d = wlsq.m_a_d * m_weight_scaling; /// static_cast<double>(wlsq.m_active_nodes_num * wlsq.m_weight_scaling);
-
-        wlsq.dist.clear();
-        wlsq.dist.reserve(wlsq.m_active_nodes_num);
-        wlsq.weight.clear();
-        wlsq.weight.reserve(wlsq.m_active_nodes_num);
-
-        weighting_coeffs[0] = WeightingFunc(ghost_pt_rel.x(), ghost_pt_rel.y(), wlsq.m_a_d);
-        //weighting_coeffs[1] = WeightingFunc(ghost_pt_rel.x(), ghost_pt_rel.y(), a_d);
-
-        int n = 1;
-        for (size_t i = 0; i < wlsq.m_subgrid.cols(); i++)
-        {
-            for (size_t j = 0; j < wlsq.m_subgrid.rows(); j++)
-            {
-                if (wlsq.m_subgrid(j, i) == 0)
-                {
-                    Eigen::Vector2d selected_node_rel_loc = Eigen::Vector2d{ static_cast<double>(wlsq.m_x_corner + i), static_cast<double>(wlsq.m_y_corner + j) } - boundary_intercept;
-                    weighting_coeffs[n] = WeightingFunc(selected_node_rel_loc.x(), selected_node_rel_loc.y(), wlsq.m_a_d);
-
-                    // debug
-                    wlsq.dist.push_back(std::sqrt(std::pow(selected_node_rel_loc.x(), 2.0) + std::pow(selected_node_rel_loc.y(), 2.0)));
-                    wlsq.weight.push_back(weighting_coeffs[n]);
-
-                    n++;
-                }
-            }
-        }
-
-        wlsq.m_weight = weighting_coeffs.asDiagonal();
+        wlsq.m_weight = ConstructWeightMatrix(m_weight_scaling, wlsq, wlsq.m_pos);
 
         Eigen::MatrixXd w_v_product = wlsq.m_weight * wlsq.m_vandermonde;
-        //wlsq.m_M = w_v_product.completeOrthogonalDecomposition().pseudoInverse() * wlsq.m_weight;
 
-        wlsq.m_M = PseudoInverseSVD(w_v_product) * wlsq.m_weight;
+        auto pseudo_inv = PseudoInverseSVD(w_v_product);
+        cond_max = std::max(cond_max, pseudo_inv.second);
+
+        wlsq.m_M = pseudo_inv.first * wlsq.m_weight;
 
         // Initialize related vars
-        wlsq.phi_vec = Eigen::VectorXd::Zero(wlsq.m_active_nodes_num + 1);
-        wlsq.bc = GetBoundaryCondition(i, j);
+        wlsq.m_phi_vec = Eigen::VectorXd::Zero(wlsq.m_active_nodes_num + 1);
+        wlsq.m_bc_type = GetBoundaryCondition(i, j);
         wlsq.m_unit_normal = unit_normal;
+        wlsq.m_bc_value = GetBoundaryPhi(i, j);
 
-        wlsq.m_numerical_stencil.clear();
-        wlsq.m_numerical_stencil.reserve(wlsq.m_active_nodes_num + 1);
-        wlsq.m_numerical_stencil.push_back({ i, j } );
-        for (size_t i = 0; i < wlsq.m_subgrid.cols(); i++)
+        // optimization measures (pre-slicing data)
+        wlsq.m_num_stencil_reduced = std::vector<std::pair<int, int>>(wlsq.m_numerical_stencil.begin() + 1, wlsq.m_numerical_stencil.end());
+        wlsq.m_phi_vec_reduced = wlsq.m_phi_vec(Eigen::seq(1, Eigen::placeholders::last));
+        wlsq.m_M_0 = wlsq.m_M(0, Eigen::seq(1, Eigen::placeholders::last));
+        wlsq.m_M_1 = wlsq.m_M(1, Eigen::seq(1, Eigen::placeholders::last));
+        wlsq.m_M_2 = wlsq.m_M(2, Eigen::seq(1, Eigen::placeholders::last));
+
+        if (wlsq.m_bc_type == BoundaryCondition::Dirichlet)
         {
-            for (size_t j = 0; j < wlsq.m_subgrid.rows(); j++)
-            {
-                if (wlsq.m_subgrid(j, i) == 0)
-                {
-                    wlsq.m_numerical_stencil.push_back({ wlsq.m_x_corner + i, wlsq.m_y_corner + j } );
-                }
-            }
+            wlsq.m_M_den = 1.0 / wlsq.m_M(0, 0);
+            wlsq.m_bc_term = wlsq.m_bc_value * wlsq.m_M_den;
+        }
+        else if (wlsq.m_bc_type == BoundaryCondition::Neumann)
+        {
+            //wlsq.m_M_den = 1.0 / wlsq.m_M(0, 0);
+            //wlsq.m_bc_term = wlsq.m_bc_value * wlsq.m_M_den;
+            //(n_x * wlsq.m_M(1, 0) + n_y * wlsq.m_M(2, 0));
         }
 	}
+
+    printf("Condition Number: %g\n\n", cond_max);
 }
 
+//-------------------
+// WLSQ Main Update
+//-------------------
+// This function updates all ghost point values using the WLSQ method. Prerequisites for
+// this method is that the wlsq data of each ghost point has been previously initialized
+// with WLSQInit, and that WLSQUpdateGeometry has been called if there have been any changes
+// to the configuration such as the weight function or boundary geometries.
 void CartGrid::WeightedLeastSquaresMethod()
 {
+    
     for (auto& [ij, wlsq] : m_wlsq_data)
     {
-        int i = ij.first;
-        int j = ij.second;
-        size_t parent_sdf = ghost_point_parent_sdf(j, i);
-
+        // Update vector of phi values corresponding to the node selection
         int n = 0;
-		for (auto [i, j] : wlsq.m_numerical_stencil)
+		for (auto [i, j] : wlsq.m_num_stencil_reduced) // pre-sliced numerical stencil
 		{
-            wlsq.phi_vec[n] = phi_matrix(j, i);
+            wlsq.m_phi_vec_reduced[n] = phi_matrix(j, i);
             n++;
 		}
 
+        // Solve based on boundary condition
+        // - See pp. ...
         double linear_comb_sum = 0.0;
-        if (wlsq.bc == BoundaryCondition::Dirichlet)
+        if (wlsq.m_bc_type == BoundaryCondition::Dirichlet)
         {
-            for (size_t n = 1; n < wlsq.m_M.cols(); n++)
-            {
-                linear_comb_sum += wlsq.m_M(0, n) * wlsq.phi_vec(n);
-            }
-            //double test_linear_comb_sum = wlsq.m_M(0, Eigen::seq(1, Eigen::placeholders::last)) * wlsq.phi_vec(Eigen::seq(1, Eigen::placeholders::last));
+            //for (size_t n = 1; n < wlsq.m_M.cols(); n++)
+            //{
+            //    linear_comb_sum += wlsq.m_M(0, n) * wlsq.phi_vec(n);
+            //}
+            linear_comb_sum = wlsq.m_M_0.dot(wlsq.m_phi_vec_reduced);
 
-            wlsq.m_gp_val = (immersed_boundaries.at(parent_sdf)->GetBoundaryPhi() - linear_comb_sum) / wlsq.m_M(0, 0);
+            //wlsq.m_gp_val = (wlsq.m_bc_value - linear_comb_sum) / wlsq.m_M(0, 0);
+            wlsq.m_gp_val = wlsq.m_bc_term - linear_comb_sum * wlsq.m_M_den;
         }
-        else if (wlsq.bc == BoundaryCondition::Neumann)
+        else if (wlsq.m_bc_type == BoundaryCondition::Neumann)
         {
             auto n_x = wlsq.m_unit_normal.x();
             auto n_y = wlsq.m_unit_normal.y();
 
             for (size_t n = 1; n < wlsq.m_M.cols(); n++)
             {
-                linear_comb_sum += (n_x * wlsq.m_M(1, n) + n_y * wlsq.m_M(2, n)) * wlsq.phi_vec(n);
+                linear_comb_sum += (n_x * wlsq.m_M(1, n) + n_y * wlsq.m_M(2, n)) * wlsq.m_phi_vec(n);
             }
             //double test_linear_comb_sum = (n_x * wlsq.m_M.row(1)(Eigen::seq(1, Eigen::placeholders::last)) + n_y * wlsq.m_M.row(2)(Eigen::seq(1, Eigen::placeholders::last))) * wlsq.phi_vec(Eigen::seq(1, Eigen::placeholders::last));
 
-            wlsq.m_gp_val = (immersed_boundaries.at(parent_sdf)->GetBoundaryPhi()/(double)(GetMeshSize().first - 1) - linear_comb_sum) / (n_x * wlsq.m_M(1, 0) + n_y * wlsq.m_M(2, 0));
-            /*std::cout << "PHI VECTOR\n" << phi_vec << "\n\n";
-            std::cout << "M\n" << wlsq.m_M << "\n\n";
-            std::cout << "COEFFICIENT VEC\n" << c_vec << "\n\n";*/
+            wlsq.m_gp_val = (wlsq.m_bc_value - linear_comb_sum) / (n_x * wlsq.m_M(1, 0) + n_y * wlsq.m_M(2, 0));
         }
-
-        
-        // A = V^T W V
-        //auto A = vandermonde.transpose() * (weighting_matrix) * vandermonde;
-        //std::cout << "A\n" << A << "\n\n";
-
-        // b = V^T W Phi
-        //auto b = vandermonde.transpose() * (weighting_matrix) * phi_vec;
-        //std::cout << "b\n" << b << "\n\n";
-
-        //Eigen::Vector4d C = A.colPivHouseholderQr().solve(b);
-        // SVD: Eigen::Vector4d C = (weighting_matrix * vandermonde).template bdcSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve(weighting_matrix * phi_vec);
-        //std::cout << "C\n" << C << "\n\n";
-
-        //Eigen::Vector4d gp_vec{ 1.0, ghost_pt_rel.x(), ghost_pt_rel.y(), ghost_pt_rel.x() * ghost_pt_rel.y() };
-
-#ifdef DEBUG_TERMINAL_WLSQ
-        std::cout << "IP\n" << image_point << "\n\n";
-        std::cout << "GP\n" << ghost_point << "\n\n";
-        std::cout << "BI\n" << boundary_intercept << "\n\n";
-        std::cout << "FLAG MATRIX\n" << grid_flags << "\n\n";
-        std::cout << "SELECTION\n" << selection << "\n\n";
-        std::cout << "VANDERMONDE\n" << vandermonde << "\n\n";
-        std::cout << "WEIGHTING MATRIX\n" << weighting_matrix << "\n\n";
-        std::cout << "PHI VECTOR\n" << phi_vec << "\n\n";
-        std::cout << "M\n" << M << "\n\n";
-        std::cout << "Mt\n" << M.transpose() << "\n\n";
-        std::cout << "COEFFICIENT VEC\n" << c_vec << "\n\n";
-        //std::cout << "GP VECTOR\n" << gp_vec << "\n\n";
-        std::cout << "GP RECONSTRUCTION\n" << gp_val << "\n\n";
-#endif
     }
 }
